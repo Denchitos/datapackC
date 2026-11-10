@@ -1,0 +1,320 @@
+# ═══════════════════════════════════════════════════════════════════════
+#  Тесты для операций && и ||
+#  Каждая tellraw содержит " (expected N)" — что должно быть в игре.
+#  Формат подстановки: %:var.0% — target, %:var.1% — objective
+# ═══════════════════════════════════════════════════════════════════════
+
+
+# ───────────────────────────────────────────────────────────────────────
+# T1. && литерал+литерал (fold, без scoreboard-команд)
+# ───────────────────────────────────────────────────────────────────────
+
+namespace tests
+
+def test_and_literals()
+{
+    raw say --- T1: && literals ---
+
+    let t1_a = true  && true      # expected 1
+    let t1_b = true  && false     # expected 0
+    let t1_c = false && true      # expected 0
+    let t1_d = false && false     # expected 0
+
+    raw tellraw @a ["t1_a = ",{score:{name:%:t1_a.0%,objective:%:t1_a.1%}}," (expected 1)"]
+    raw tellraw @a ["t1_b = ",{score:{name:%:t1_b.0%,objective:%:t1_b.1%}}," (expected 0)"]
+    raw tellraw @a ["t1_c = ",{score:{name:%:t1_c.0%,objective:%:t1_c.1%}}," (expected 0)"]
+    raw tellraw @a ["t1_d = ",{score:{name:%:t1_d.0%,objective:%:t1_d.1%}}," (expected 0)"]
+}
+
+
+# ───────────────────────────────────────────────────────────────────────
+# T2. || литерал+литерал
+# ───────────────────────────────────────────────────────────────────────
+def test_or_literals()
+{
+    raw say --- T2: || literals ---
+
+    let t2_a = true  || true      # expected 1
+    let t2_b = true  || false     # expected 1
+    let t2_c = false || true      # expected 1
+    let t2_d = false || false     # expected 0
+
+    raw tellraw @a ["t2_a = ",{score:{name:%:t2_a.0%,objective:%:t2_a.1%}}," (expected 1)"]
+    raw tellraw @a ["t2_b = ",{score:{name:%:t2_b.0%,objective:%:t2_b.1%}}," (expected 1)"]
+    raw tellraw @a ["t2_c = ",{score:{name:%:t2_c.0%,objective:%:t2_c.1%}}," (expected 1)"]
+    raw tellraw @a ["t2_d = ",{score:{name:%:t2_d.0%,objective:%:t2_d.1%}}," (expected 0)"]
+}
+
+
+# ───────────────────────────────────────────────────────────────────────
+# T3. && двух bool-переменных
+# ───────────────────────────────────────────────────────────────────────
+def test_and_vars()
+{
+    raw say --- T3: && vars ---
+
+    let x = true
+    let y = false
+
+    let t3_tt = x && x            # expected 1
+    let t3_tf = x && y            # expected 0
+    let t3_ft = y && x            # expected 0
+    let t3_ff = y && y            # expected 0
+
+    raw tellraw @a ["t3_tt = ",{score:{name:%:t3_tt.0%,objective:%:t3_tt.1%}}," (expected 1)"]
+    raw tellraw @a ["t3_tf = ",{score:{name:%:t3_tf.0%,objective:%:t3_tf.1%}}," (expected 0)"]
+    raw tellraw @a ["t3_ft = ",{score:{name:%:t3_ft.0%,objective:%:t3_ft.1%}}," (expected 0)"]
+    raw tellraw @a ["t3_ff = ",{score:{name:%:t3_ff.0%,objective:%:t3_ff.1%}}," (expected 0)"]
+}
+
+
+# ───────────────────────────────────────────────────────────────────────
+# T4. || двух bool-переменных
+# ───────────────────────────────────────────────────────────────────────
+def test_or_vars()
+{
+    raw say --- T4: || vars ---
+
+    let x = true
+    let y = false
+
+    let t4_tt = x || x            # expected 1
+    let t4_tf = x || y            # expected 1
+    let t4_ft = y || x            # expected 1
+    let t4_ff = y || y            # expected 0
+
+    raw tellraw @a ["t4_tt = ",{score:{name:%:t4_tt.0%,objective:%:t4_tt.1%}}," (expected 1)"]
+    raw tellraw @a ["t4_tf = ",{score:{name:%:t4_tf.0%,objective:%:t4_tf.1%}}," (expected 1)"]
+    raw tellraw @a ["t4_ft = ",{score:{name:%:t4_ft.0%,objective:%:t4_ft.1%}}," (expected 1)"]
+    raw tellraw @a ["t4_ff = ",{score:{name:%:t4_ff.0%,objective:%:t4_ff.1%}}," (expected 0)"]
+}
+
+
+# ───────────────────────────────────────────────────────────────────────
+# T5. Короткое замыкание: литерал СЛЕВА, x = false
+# ───────────────────────────────────────────────────────────────────────
+def test_short_circuit_left()
+{
+    raw say --- T5: short-circuit (literal left, x = false) ---
+
+    let x = false
+
+    let t5_1 = true  && x         # true && false   = 0
+    let t5_2 = false && x         # false && false  = 0
+    let t5_3 = true  || x         # true || false   = 1
+    let t5_4 = false || x         # false || false  = 0
+
+    raw tellraw @a ["t5_tAx = ",{score:{name:%:t5_1.0%,objective:%:t5_1.1%}}," (expected 0)"]
+    raw tellraw @a ["t5_fAx = ",{score:{name:%:t5_2.0%,objective:%:t5_2.1%}}," (expected 0)"]
+    raw tellraw @a ["t5_tOx = ",{score:{name:%:t5_3.0%,objective:%:t5_3.1%}}," (expected 1)"]
+    raw tellraw @a ["t5_fOx = ",{score:{name:%:t5_4.0%,objective:%:t5_4.1%}}," (expected 0)"]
+}
+
+
+# ───────────────────────────────────────────────────────────────────────
+# T6. Короткое замыкание: литерал СПРАВА, x = true
+# ───────────────────────────────────────────────────────────────────────
+def test_short_circuit_right()
+{
+    raw say --- T6: short-circuit (literal right, x = true) ---
+
+    let x = true
+
+    let t6_1 = x && true          # true && true   = 1
+    let t6_2 = x && false         # true && false  = 0
+    let t6_3 = x || true          # true || true   = 1
+    let t6_4 = x || false         # true || false  = 1
+
+    raw tellraw @a ["t6_xAt = ",{score:{name:%:t6_1.0%,objective:%:t6_1.1%}}," (expected 1)"]
+    raw tellraw @a ["t6_xAf = ",{score:{name:%:t6_2.0%,objective:%:t6_2.1%}}," (expected 0)"]
+    raw tellraw @a ["t6_xOt = ",{score:{name:%:t6_3.0%,objective:%:t6_3.1%}}," (expected 1)"]
+    raw tellraw @a ["t6_xOf = ",{score:{name:%:t6_4.0%,objective:%:t6_4.1%}}," (expected 1)"]
+}
+
+
+# ───────────────────────────────────────────────────────────────────────
+# T7. && и || со сравнениями. a=7, b=3
+#   a>5 = 1,  b<10 = 1
+#   a<5 = 0,  b>10 = 0
+# ───────────────────────────────────────────────────────────────────────
+def test_with_comparisons()
+{
+    raw say --- T7: && || with comparisons (a=7, b=3) ---
+
+    let a : score = 7
+    let b : score = 3
+
+    let t7_and_1 = (a > 5) && (b < 10)    # 1 && 1 = 1
+    let t7_and_2 = (a > 5) && (b > 10)    # 1 && 0 = 0
+    let t7_and_3 = (a < 5) && (b < 10)    # 0 && 1 = 0
+    let t7_and_4 = (a < 5) && (b > 10)    # 0 && 0 = 0
+
+    let t7_or_1  = (a > 5) || (b < 10)    # 1 || 1 = 1
+    let t7_or_2  = (a > 5) || (b > 10)    # 1 || 0 = 1
+    let t7_or_3  = (a < 5) || (b < 10)    # 0 || 1 = 1
+    let t7_or_4  = (a < 5) || (b > 10)    # 0 || 0 = 0
+
+    raw tellraw @a ["t7_and_1 = ",{score:{name:%:t7_and_1.0%,objective:%:t7_and_1.1%}}," (expected 1)"]
+    raw tellraw @a ["t7_and_2 = ",{score:{name:%:t7_and_2.0%,objective:%:t7_and_2.1%}}," (expected 0)"]
+    raw tellraw @a ["t7_and_3 = ",{score:{name:%:t7_and_3.0%,objective:%:t7_and_3.1%}}," (expected 0)"]
+    raw tellraw @a ["t7_and_4 = ",{score:{name:%:t7_and_4.0%,objective:%:t7_and_4.1%}}," (expected 0)"]
+    raw tellraw @a ["t7_or_1  = ",{score:{name:%:t7_or_1.0%,objective:%:t7_or_1.1%}}," (expected 1)"]
+    raw tellraw @a ["t7_or_2  = ",{score:{name:%:t7_or_2.0%,objective:%:t7_or_2.1%}}," (expected 1)"]
+    raw tellraw @a ["t7_or_3  = ",{score:{name:%:t7_or_3.0%,objective:%:t7_or_3.1%}}," (expected 1)"]
+    raw tellraw @a ["t7_or_4  = ",{score:{name:%:t7_or_4.0%,objective:%:t7_or_4.1%}}," (expected 0)"]
+}
+
+
+# ───────────────────────────────────────────────────────────────────────
+# T8. Приоритет && > || (базовый)
+# ───────────────────────────────────────────────────────────────────────
+def test_precedence_basic()
+{
+    raw say --- T8: a && b || c (basic) ---
+
+    let a = true
+    let b = false
+    let c = true
+    # (a && b) || c = (true && false) || true = false || true = 1
+    let t8 = a && b || c          # expected 1
+
+    raw tellraw @a ["t8 = ",{score:{name:%:t8.0%,objective:%:t8.1%}}," (expected 1)"]
+}
+
+
+# ───────────────────────────────────────────────────────────────────────
+# T9. Приоритет && > || (дискриминирующий)
+# a=false, b=true, c=true
+#   (a && b) || c  = (false && true) || true = false || true = 1
+#   a && (b || c)  = false && (true || true) = false && true = 0  ← неверно
+# Ожидаемое 1 отличает правильный парсинг от неправильного.
+# ───────────────────────────────────────────────────────────────────────
+def test_precedence_and_over_or()
+{
+    raw say --- T9: a && b || c (discriminating) ---
+
+    let a = false
+    let b = true
+    let c = true
+    let t9 = a && b || c          # expected 1
+
+    raw tellraw @a ["t9 = ",{score:{name:%:t9.0%,objective:%:t9.1%}}," (expected 1)"]
+}
+
+
+# ───────────────────────────────────────────────────────────────────────
+# T10. Приоритет && > || (обратный дискриминирующий)
+# a=true, b=true, c=false
+#   a || (b && c)  = true || (true && false) = true || false = 1
+#   (a || b) && c  = (true || true) && false = true && false = 0  ← неверно
+# ───────────────────────────────────────────────────────────────────────
+def test_precedence_or_and()
+{
+    raw say --- T10: a || b && c (discriminating) ---
+
+    let a = true
+    let b = true
+    let c = false
+    let t10 = a || b && c         # expected 1
+
+    raw tellraw @a ["t10 = ",{score:{name:%:t10.0%,objective:%:t10.1%}}," (expected 1)"]
+}
+
+
+# ───────────────────────────────────────────────────────────────────────
+# T11. Цепочка a && b && c
+# ───────────────────────────────────────────────────────────────────────
+def test_chained_and()
+{
+    raw say --- T11: a && b && c ---
+
+    let t11_ttt = true && true  && true     # expected 1
+    let t11_tft = true && false && true     # expected 0
+
+    raw tellraw @a ["t11_ttt = ",{score:{name:%:t11_ttt.0%,objective:%:t11_ttt.1%}}," (expected 1)"]
+    raw tellraw @a ["t11_tft = ",{score:{name:%:t11_tft.0%,objective:%:t11_tft.1%}}," (expected 0)"]
+}
+
+
+# ───────────────────────────────────────────────────────────────────────
+# T12. Цепочка a || b || c
+# ───────────────────────────────────────────────────────────────────────
+def test_chained_or()
+{
+    raw say --- T12: a || b || c ---
+
+    let t12_fft = false || false || true    # expected 1
+    let t12_fff = false || false || false   # expected 0
+
+    raw tellraw @a ["t12_fft = ",{score:{name:%:t12_fft.0%,objective:%:t12_fft.1%}}," (expected 1)"]
+    raw tellraw @a ["t12_fff = ",{score:{name:%:t12_fff.0%,objective:%:t12_fff.1%}}," (expected 0)"]
+}
+
+
+# ───────────────────────────────────────────────────────────────────────
+# T13. Смесь сравнений в && и ||
+# a=5, b=10
+#   (a>0) && (b>0) && (a<b) = true && true && true = 1
+#   (a==5) || (b==5)        = true || false       = 1
+#   (a==5) && (b==5)        = true && false       = 0
+# ───────────────────────────────────────────────────────────────────────
+def test_mixed()
+{
+    raw say --- T13: mixed (a=5, b=10) ---
+
+    let a : score = 5
+    let b : score = 10
+
+    let t13_1 = (a > 0) && (b > 0) && (a < b)   # expected 1
+    let t13_2 = (a == 5) || (b == 5)            # expected 1
+    let t13_3 = (a == 5) && (b == 5)            # expected 0
+
+    raw tellraw @a ["t13_1 = ",{score:{name:%:t13_1.0%,objective:%:t13_1.1%}}," (expected 1)"]
+    raw tellraw @a ["t13_2 = ",{score:{name:%:t13_2.0%,objective:%:t13_2.1%}}," (expected 1)"]
+    raw tellraw @a ["t13_3 = ",{score:{name:%:t13_3.0%,objective:%:t13_3.1%}}," (expected 0)"]
+}
+
+
+# ───────────────────────────────────────────────────────────────────────
+# T14. Скобки переопределяют приоритет
+# a=false, b=true, c=false, d=true
+#   a || (b && c)  = false || (true && false) = false = 0
+#   (a || b) && d  = (false || true) && true  = true  = 1
+# ───────────────────────────────────────────────────────────────────────
+def test_parens()
+{
+    raw say --- T14: parentheses ---
+
+    let a = false
+    let b = true
+    let c = false
+    let d = true
+
+    let t14_1 = a || (b && c)       # expected 0
+    let t14_2 = (a || b) && d       # expected 1
+
+    raw tellraw @a ["t14_1 = ",{score:{name:%:t14_1.0%,objective:%:t14_1.1%}}," (expected 0)"]
+    raw tellraw @a ["t14_2 = ",{score:{name:%:t14_2.0%,objective:%:t14_2.1%}}," (expected 1)"]
+}
+
+
+# ───────────────────────────────────────────────────────────────────────
+# T15. Комбинации сравнений. a=3
+#   (3>2)=1, (3<5)=1, (3>10)=0, (3<2)=0
+# ───────────────────────────────────────────────────────────────────────
+def test_compare_combinations()
+{
+    raw say --- T15: compare combinations (a=3) ---
+
+    let a : score = 3
+
+    let t15_1 = (a > 2) && (a < 5)      # 1 && 1 = 1
+    let t15_2 = (a > 2) || (a > 10)     # 1 || 0 = 1
+    let t15_3 = (a < 2) && (a > 10)     # 0 && 0 = 0
+    let t15_4 = (a < 2) || (a > 10)     # 0 || 0 = 0
+
+    raw tellraw @a ["t15_1 = ",{score:{name:%:t15_1.0%,objective:%:t15_1.1%}}," (expected 1)"]
+    raw tellraw @a ["t15_2 = ",{score:{name:%:t15_2.0%,objective:%:t15_2.1%}}," (expected 1)"]
+    raw tellraw @a ["t15_3 = ",{score:{name:%:t15_3.0%,objective:%:t15_3.1%}}," (expected 0)"]
+    raw tellraw @a ["t15_4 = ",{score:{name:%:t15_4.0%,objective:%:t15_4.1%}}," (expected 0)"]
+}

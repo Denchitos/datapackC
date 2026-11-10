@@ -1,0 +1,101 @@
+namespace test
+
+def print_score( str : string , a : score )
+{
+    raw tellraw @a [{ %str.0% : %:str.1%,nbt:%:str.2%,interpret:true },{ score:{name:%:a.0%,objective:%:a.1%} }]
+}
+
+def print_string( str : string )
+{
+    raw tellraw @a [{ %str.0% : %:str.1%,nbt:%:str.2%,interpret:true }]
+}
+
+def test_function(a : score) -> string
+{
+    if ( a > 0  )
+    {
+        if ( a < 5 )
+        {
+            return "less than 5"
+        }
+
+        while( a < 10 )
+        {
+            if ( a==9 ) return "CYCLE END ON A = 10"
+            a = a+1
+            raw say iteration
+        }
+
+        return "A is more than 9"
+    }
+    else return "less than 0"
+
+    raw say "YOU NEVER MUST SEE THAT"
+    return "you shouldn't see thats"
+}
+
+def run_neg_one()
+{
+    print_string(test_function(0-1))
+}
+
+def run_one()
+{
+    print_string(test_function(1))
+}
+
+def run_one()
+{
+    print_string(test_function(1))
+}
+
+def run_four()
+{
+    print_string(test_function(4))
+}
+
+def run_five()
+{
+    print_string(test_function(5))
+}
+
+def run_nine()
+{
+    print_string(test_function(9))
+}
+
+def run_ten()
+{
+    print_string(test_function(10))
+}
+
+
+def test_void( a : score_bool)
+{
+    if ( a )
+    {
+        raw say a is true
+
+        return 
+
+        raw say You never see that in test_void
+    }
+    else
+    {
+        raw say a if false
+    }
+
+    raw say "AFTER RETURN"
+
+    return
+}
+
+def run_test_v_0()
+{
+    test_void(false)
+}
+
+def run_test_v_1()
+{
+    test_void(true)
+}

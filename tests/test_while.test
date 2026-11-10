@@ -1,0 +1,41 @@
+def test_while()
+{
+    let a = 0
+    let b = a
+    while ( a<10 )
+    {
+        if ( a == 7 )
+        {
+            raw say Cycle End
+            break
+        }
+        raw tellraw @a ["iteration while : a = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+        a+=1
+    }
+
+    if ( a == 7 )
+    {
+        raw say a is 7
+    }
+    raw say BEFORE CYCLE END
+}
+
+def test_while_scheduled()
+{
+    let a = 0
+    while ( a<10 )
+    {
+        if ( a == 7 )
+        {
+            raw say Cycle End
+            break
+        }
+        raw tellraw @a ["iteration while : a = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+        a+=1
+    }
+    if ( a == 7 )
+    {
+        raw say a is 7
+    }
+    raw say NO BEFORE CYCLE END
+}

@@ -1,0 +1,127 @@
+#пример
+
+namespace global:dp
+
+objective dms
+
+def test_string()
+{
+    print_score(5)
+    print("String:")
+
+    let b = "Hello World!"
+
+    print(b)
+
+    compare(5,6)
+
+    no_func(2)
+
+    print_score(10)
+    let c = 10
+    print_score(c)
+    raw tellraw @a [ "b string is ", { %b.0% : %:b.1%,nbt:%:b.2%,interpret:true }]
+    c = no_func(4)
+}
+
+def why(a : score)
+{
+    if ( a > 10 )
+    {
+        print_score(a)
+        return
+    }
+    return
+}
+
+def print(str : string)
+{
+    raw tellraw @a { %str.0% : %:str.1%,nbt:%:str.2%,interpret:true }
+}
+
+def print_score( a : score )
+{
+    raw tellraw @a ["score a is ",{ score:{name:%:a.0%,objective:%:a.1%} }]
+}
+
+def compare(a : score,b : score)
+{
+    raw tellraw @a ["score a is ",{ score:{name:%:a.0%,objective:%:a.1%} }]
+    raw tellraw @a ["score b is ",{ score:{name:%:b.0%,objective:%:b.1%} }]
+    let cmp = a>b
+    raw tellraw @a ["score compared is ",{ score:{name:%:cmp.0%,objective:%:cmp.1%} }]
+}
+
+def no_func(a : score) -> score
+{
+    if ( a>5 )
+    {
+        return 50
+    }
+    else return 25
+
+    return 10
+}
+
+storage custom 
+{
+    a : string,
+    b : string,
+    c : string
+}
+
+storage bet
+{
+    a : int,
+    b : custom,
+    c : int
+}
+
+def for_test(b : bet) -> custom
+{
+    return b.b
+}
+
+def for_test2(x : score) -> score
+{
+    return x*2
+}
+
+def say()
+{
+    raw say 55
+}
+
+def func2(a : score) -> score
+{
+    let y : int = 27
+    let user = @s
+    let c : custom = { "Hello","World","!" }
+    let b : bet = {5,c,5}
+
+    let zoomba = b.b.c
+    let hun : string = for_test(b).a
+    let amo = for_test2(5)
+    let xyz = b
+    user.dms = 5
+    user.say()
+    let d : bet = { 5,{ "Hello","World","!" },5 }
+    
+    let zzz : int[] = { 55 , y ,66}
+
+    let zzz2 : int[][] = { zzz,{5,5,5} }
+
+    let zzz_item = zzz[5]
+    let zzz_len = zzz.len()
+
+    zzz_item = zzz2[1][0]
+
+
+    if ( a>5 )
+    {
+        return 50
+    }
+    else return 25
+
+    return 10
+}

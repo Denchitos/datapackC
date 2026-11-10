@@ -1,0 +1,104 @@
+def test_score_expr()
+{
+    let a = 0
+    let five = 5
+    let four = 4
+    let two = 2
+    let ten = 10
+    let elev = 11
+    raw say Literals:
+    a = 5+4
+    raw tellraw @a [" 5+4 = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+    a =  10 - 4
+    raw tellraw @a [" 10-4 = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+    a = 10*2
+    raw tellraw @a [" 10*2 = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+    a = 10/2
+    raw tellraw @a [" 10/2 = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+
+    a = 11%2
+    raw tellraw @a [" 11%2 = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+    a = 5
+    raw tellraw @a ["a = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+    a +=2
+    raw tellraw @a [" a+=2 : a = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+    a *=2
+    raw tellraw @a [" a*=2 : a = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+    a /= 2
+    raw tellraw @a [" a*=2 : a = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+    a %= 2
+    raw tellraw @a [" a%=2 : a = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+    raw say Vars:
+
+    a = five+four
+    raw tellraw @a [" 5+4 = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+    a =  ten - four
+    raw tellraw @a [" 10-4 = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+    a = ten*two
+    raw tellraw @a [" 10*2 = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+    a = ten/two
+    raw tellraw @a [" 10/2 = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+
+    a = elev%two
+    raw tellraw @a [" 11%2 = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+    a = five
+    raw tellraw @a [" a = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+    a += two
+    raw tellraw @a [" a+=2 : a = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+    a *= two
+    raw tellraw @a [" a*=2 : a = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+    a /= two
+    raw tellraw @a [" a*=2 : a = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+    a %= two
+    raw tellraw @a [" a%=2 : a = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+    raw say Vars - Literal:
+
+    a = five+4
+    raw tellraw @a [" 5+4 = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+    a =  ten - 4
+    raw tellraw @a [" 10-4 = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+    a = ten*2
+    raw tellraw @a [" 10*2 = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+    a = ten/2
+    raw tellraw @a [" 10/2 = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+
+    a = elev%2
+    raw tellraw @a [" 11%2 = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+    raw say Literals - Vars:
+
+    a = 5+four
+    raw tellraw @a [" 5+4 = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+    a =  10 - four
+    raw tellraw @a [" 10-4 = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+    a = 10*two
+    raw tellraw @a [" 10*2 = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+    a = 10/two
+    raw tellraw @a [" 10/2 = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+
+    a = 11%two
+    raw tellraw @a [" 11%2 = ",{score:{name:%:a.0%,objective:%:a.1%}}]
+}
