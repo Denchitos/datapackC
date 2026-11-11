@@ -87,26 +87,26 @@ tree::NodePtr Parser::parseStorageDecl()
     if (!expect(Token::OBrace,"Expected a '{' in storage definition") ) return nullptr;
     
     match(Token::EL);
-    if ( !compare(Token::CBrace) )
-        while ( true )
-        {
-            if (!expect(Token::Word,"Expected a WORD as a storage field name")){
-                statementPanic();
-                continue;
-            }
-            if (!expect(Token::Colon,"Expected a ':' as separator in \"<field name> : <field type>\"")){
-                statementPanic();
-                continue;
-            }
-            if (!expect(Token::Word,"Expected a WORD as a storage field type")){
-                statementPanic();
-                continue;
-            }
-            
-            storage->pushField(look(-3).tok,look(-1).tok);
-            if ( !match(Token::Comma) ) break;
+
+    while ( true )
+    {
+        //std::cout<<"STORAGE DECL CYCLE " << look().tok<<"\n";
+        if ( !compare(Token{"def",Token::Word}) && compare(Token::Word) ) {            
+            storage->pushField(parseVarDecl(false));
             match(Token::EL);
         }
+        else if ( compare(Token{"def",Token::Word} ) ){
+            storage->pushMethod(parseFunction());
+            match(Token::EL);
+        }
+        else if ( compare(Token::CBrace) )
+            break;
+        else {
+            error("Unexpected Token");
+            statementPanic();
+            return nullptr;
+        }
+    }
     match(Token::EL);
 
     if (!expect(Token::CBrace,"Expected a '}' after storage definition") ) return nullptr;
@@ -116,7 +116,7 @@ tree::NodePtr Parser::parseStorageDecl()
     return storage;
 }
 
-tree::NodePtr Parser::parseFunction()
+tree::FunctionPtr Parser::parseFunction()
 {
     if (!expect(Token{"def",Token::Word},"Expected 'def' in function defining") ) return nullptr;
 
@@ -130,7 +130,18 @@ tree::NodePtr Parser::parseFunction()
 
     if ( match(Token{"->",Token::Operator}) )
     {
-        function->ret_type = look().tok;
+        auto [ type_name,list_depth,modifeirs,is_link ] = parseVarSignature();
+        if ( is_link )
+        {
+            error( "Function return type can't be link" );
+        }
+        if ( !type_name.has_value() )
+        {
+            error("Not defined name of type in function return statement");
+            statementPanic();
+        }
+
+        function->ret_type = { type_name.value() , list_depth};
         next();
     }
 
@@ -499,15 +510,19 @@ tree::VarDeclPtr Parser::parseVarDecl(bool init_required)
 
     if ( match(Token::Colon) )
     {
-        auto var_sign = parseVarSignature();
-        auto& var_type = var_sign.first;
+        auto [var_type,list_depth,modifiers,is_link] = parseVarSignature();
 
-        if ( var_type.first.has_value() )
+        if ( var_type.has_value() )
         {
-            vardecl->setVarType(var_type.first.value());
-            vardecl->list_depth = var_type.second;
+            vardecl->setVarType(var_type.value());
+            vardecl->list_depth = list_depth;
         }
-        for ( auto& it: var_sign.second )
+        if ( is_link && init_required )
+        {
+            error("Variable can not be a link when declared in scope");
+        }
+        vardecl->is_link = is_link;
+        for ( auto& it: modifiers )
         {
             if ( it == "mut" || it == "mutable" )
             {
@@ -534,10 +549,12 @@ Parser::VarSignature Parser::parseVarSignature()
     std::optional<std::string> type = std::nullopt;
     std::vector<std::string> modif;
     size_t list_depth = 0;
-    while ( compare(Token::Word) )
+    bool is_link = false; 
+    while ( compare(Token::Word) || compare(Token::Dollar) )
     {
         auto& word = look().tok;
-        if ( modifiers.contains(word))
+        if ( match(Token::Dollar) ) is_link = true;
+        else if ( modifiers.contains(word))
         {
             modif.emplace_back(word);
             next();
@@ -567,7 +584,7 @@ Parser::VarSignature Parser::parseVarSignature()
             next();
         }
     }
-    return {{type,list_depth},modif};
+    return {type,list_depth,modif,is_link};
 }
 
 void Parser::statementPanic()
@@ -693,6 +710,7 @@ std::unique_ptr<tree::ExprNode> Parser::parseTerm()
 
     while ( true )
     {
+        //std::cout<<"PARSE TERM "<<look().tok<<"\n";
         if ( match(Token::Dot) )
             mem_access->members.emplace_back(parsePrimaryTerm());
         else if ( match(Token::OBracket) )
@@ -702,13 +720,18 @@ std::unique_ptr<tree::ExprNode> Parser::parseTerm()
             auto call = std::make_unique<tree::Call>(tok);
             while ( true )
             {
-                std::cout<<"HERE" << look().toString() << " \n";
                 call->call_args.push_back(parseExpr());
                 if ( match(Token::Comma) ) continue;
                 else if ( match(Token::CBracket) ) break;
                 else error("Expected a '[' that closes 'operator[]', started in line: " + std::to_string(tok.row) + " in row: " + std::to_string(tok.col));
             }
             mem_access->members.push_back(std::move(call));
+        }
+        else
+        {
+            error("UnexpectedToken");
+            statementPanic();
+            return mem_access;
         }
         if ( !compare(Token::Dot) && !compare(Token::OBracket ) ) break;
     }

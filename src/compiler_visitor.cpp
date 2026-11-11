@@ -157,6 +157,26 @@ void CompilerVisitor::visit(tree::VarDecl* vardecl)
     }
 }
 
+void CompilerVisitor::visit(tree::StorageDecl* storage_decl)
+{
+    if  ( storage_decl->methods.empty() ) return;
+    else
+    {
+        fileCtx->currentNamespace.push( storage_decl->getName() );
+
+        current_storage = &(fileCtx->getStorageDecl(storage_decl->getName()));
+
+        for ( auto & method : storage_decl->methods )
+        {
+            method->accept(this);
+        }
+        
+        current_storage = nullptr;
+        
+        fileCtx->currentNamespace.pop();
+    }
+}
+
 void CompilerVisitor::visit(tree::Block* b)
 {
     //std::cout<<"BLOCK\n";
@@ -260,7 +280,18 @@ void CompilerVisitor::genCallMemberAccess(tree::Call* call, Value& value,size_t 
         call->accept(this);
         value = getTopOperand();
     }
-    else throw std::runtime_error(getRowCol(call) + " Unknown member function in storage '"+ fileCtx->typeToStr(value.type) + "'" );
+    else {
+        auto& storage_decl = fileCtx->getStorageDecl(value.type);
+        if ( storage_decl.methods.contains(call->getName()) )
+        {
+            auto method_decl = storage_decl.methods[call->getName()];
+            std::vector<Value> call_args{ value };
+            for ( auto& arg : call->call_args ){ arg->accept(this) ; call_args.emplace_back(getTopOperand()) ; }
+            emitCall(call_args,method_decl);
+            value = getTopOperand();
+        }
+        else throw std::runtime_error( getRowCol(call) +" Unknown member function '" + call->getName() +"'");
+    }
 }
 
 void CompilerVisitor::genSelectorMemberAccess(tree::RawSelector* call, Value& value,size_t &i)
@@ -502,39 +533,26 @@ void CompilerVisitor::visit(tree::ScheduledWhile* While)
     fileCtx->println("function "+ cb_name);
 }
 
-void CompilerVisitor::visit(tree::Call* call)
+void CompilerVisitor::emitCall(const std::vector<Value>& call_args,FunctionDeclaration& fd)
 {
-    auto& name = call->getName();
-    
-    if ( !fileCtx->hasFunc(name) )
-    {
-        throw std::runtime_error( getRowCol(call) + " Unknown name to call :" + call->getName());
-    }
-
-    auto& fd = fileCtx->getFuncDecl(name);
-
-    auto got_args_num = call->call_args.size();
+    auto got_args_num = call_args.size();
     auto expected_args_num = fd.args.size();
     if ( got_args_num != expected_args_num )
     {
-        throw std::runtime_error(getRowCol(call) + " Function exepcted "+std::to_string(expected_args_num)+" ,but got "+std::to_string(got_args_num));
+        throw std::runtime_error("Function exepcted "+std::to_string(expected_args_num)+" ,but got "+std::to_string(got_args_num));
     }
 
     size_t i = 0;
     
-    for ( auto& arg : call->call_args )
+    for ( auto& arg : call_args )
     {
-        arg->accept(this);
-        auto a = getTopOperand();
-        try { codeGen->genAssign( fd.args[i++] ,a ); }
-        catch ( std::exception& e ) { throw std::runtime_error(getRowCol(call) + " " + e.what()); }
+        codeGen->genAssign( fd.args[i++] ,arg );
     }
 
     fileCtx->println("function "+fd.minecraft_name);
 
     if ( fd.ret.has_value() )
     {
-        //std::cout << "Pushed operand " << fd.ret.value().to_string() <<"\n";
         op_stack.push(fd.ret.value());
     }
     else
@@ -543,10 +561,37 @@ void CompilerVisitor::visit(tree::Call* call)
     }
 }
 
+void CompilerVisitor::visit(tree::Call* call)
+{
+    auto& name = call->getName();
+    if ( !fileCtx->hasFunc(name) )
+    {
+        throw std::runtime_error( getRowCol(call) + " Unknown name to call :" + name);
+    }
+    std::vector<Value> call_args;
+
+    for ( auto& arg : call->call_args )
+    {
+        arg->accept(this);
+        call_args.emplace_back(getTopOperand());
+    }
+
+    try {
+        emitCall(call_args,fileCtx->getFuncDecl(name));
+    }
+    catch ( std::exception& e )
+    {
+        throw std::runtime_error(getRowCol(call) + " " + e.what());
+    }
+}
+
 void CompilerVisitor::visit(tree::Return* ret)
 {
     auto name = fileCtx->realFunction().getName();
-    auto& funcDecl = fileCtx->getFuncDecl(name);
+
+    FunctionDeclaration funcDecl; 
+    if ( current_storage==nullptr ) funcDecl = fileCtx->getFuncDecl(name);
+    else funcDecl = current_storage->methods[fileCtx->realFunction().getName()];
 
     if ( funcDecl.ret.has_value() )
     {

@@ -32,6 +32,7 @@ namespace tree
     class StorageDecl;
     class InitList;
     class IndexAccess;
+    class InlinedFunction;
 }
 
 class Visitor
@@ -39,6 +40,7 @@ class Visitor
 public:
     virtual void visit(tree::Node*) = 0;
     virtual void visit(tree::Function*) = 0;
+    //virtual void visit(tree::InlinedFunction*) = 0;
     virtual void visit(tree::Block*) = 0;
     virtual void visit(tree::Raw*) = 0;
     virtual void visit(tree::BinaryOperator*) = 0;

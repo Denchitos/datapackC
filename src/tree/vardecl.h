@@ -6,7 +6,7 @@ TREE_BEGIN
 struct VarDecl : public Node
 {
     std::string type = "auto";
-    
+    bool is_link = false;
     std::string var_name ;
 
     size_t list_depth = 0;

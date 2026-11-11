@@ -16,7 +16,7 @@ class CompilerVisitor : public Visitor
     std::shared_ptr<ExprCodeGen> codeGen;
     IterableStack<Value> op_stack;
 
-
+    StorageDeclaration* current_storage = nullptr;
 public:
     std::vector<Function> compiled_functions;
     CompilerVisitor(std::shared_ptr<FileCompilationContext>,std::shared_ptr<ExprCodeGen>);
@@ -51,8 +51,9 @@ public:
     void visit(tree::ScheduledWhile*);
     void visit(tree::Break*) override;
     void visit(tree::Call*) override;
+        void emitCall(const std::vector<Value>& call_args,FunctionDeclaration& fd);
     void visit(tree::Return*) override;
-    void visit(tree::StorageDecl* ) override{}
+    void visit(tree::StorageDecl* ) override;
 
     void visit(tree::InitList* init_list) override
     {

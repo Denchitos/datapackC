@@ -20,13 +20,16 @@ struct Value
     std::vector<std::string> value;
     Type type;
     std::string symbol_name;
+    bool is_link = false;
 
+    Value() = default;
     Value(Type type) : type(type) {}
     Value(const std::vector<std::string>& value,Type type,const std::string& sym = "") : value(value),type(type),symbol_name(sym) {}
     Value(std::vector<std::string>&& value,Type type,const std::string& sym = "") : value(std::move(value)),type(type),symbol_name(sym) {}
+   
     Value(const std::string& value,Type type,const std::string& sym = "") : value({value}),type(type),symbol_name(sym) {}
     Value(std::string&& value,Type type,const std::string& sym = "") : value({value}),type(type),symbol_name(sym) {}
-
+    
     std::string to_string() const
     {
         auto r = value[0];
@@ -50,6 +53,10 @@ struct Namespace
     Namespace(const std::string& name,const std::vector<std::string>& path): name(name) , path(path) {}
 
     void push(const std::string&);
+    void pop()
+    {
+        path.pop_back();
+    }
     std::string toMinecraftPath()const;
     std::string toPath(const std::string& where)const;
     std::string toDotPath() const;
@@ -114,6 +121,7 @@ struct StorageDeclaration
 {
     std::vector<std::string> field_names;
     std::unordered_map<std::string,Type> fields;
+    std::unordered_map<std::string,FunctionDeclaration> methods;
 
     bool hasField(const std::string& field) const
     {
@@ -173,8 +181,6 @@ public:
         tick_file->println(line);
     }
 
-
-
     bool hasType(const std::string& type)
     {
         return Type::hasType(type) || declared_types.contains(type);
@@ -192,23 +198,48 @@ public:
         declared_types.emplace(type);
         return true;
     }
-    Type strToType(const std::string& type)
-    {
+    Type strNotListToType(const std::string& type)
+    { 
         if ( Type::hasType(type) ) return Type::StrToType(type).value();
-
+        
         auto it = str_to_type.find(type);
 
         if ( it != str_to_type.end() ) return (*it).second;
 
-        throw std::runtime_error("Couldn't converse "+ type + " to Type");
+        throw std::runtime_error("Couldn't converse string '"+ type + "' to Type");
+    }
+
+    Type strToType(const std::string& s)
+    {
+        if ( !s.contains('[') ) return strNotListToType(s);
+
+        auto p = s.find('[');
+
+        Type type( strNotListToType(s.substr(0,p)) );
+
+        for ( size_t i = p ; i < s.length() ;  i++)
+        {
+            if (s[i] == ']') type.list_depth++;
+        }
+
+        return type;
     }
 
     std::string typeToStr(const Type& type)
     {
-        auto val = Type::toStr(type);
-        if ( val.has_value() ) return val.value();        
-        if (type_to_str.contains(type)) return type_to_str[type];
-        else return "[UNDEFINED TYPE]";
+        Type base_type = type;
+        base_type.list_depth = 0;
+
+        std::string result;
+        auto val = Type::toStr(base_type);
+        if ( val.has_value() ) result = val.value();        
+        else if (type_to_str.contains(base_type)) result = type_to_str[base_type];
+        else result = "[UNDEFINED TYPE]";
+
+        for (size_t i = 0; i < type.list_depth; ++i) {
+            result += "[]";
+        }
+        return result;
     }
 
     std::vector<std::string> nameMangle(const Type& type,const std::string& name);

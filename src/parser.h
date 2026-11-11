@@ -39,7 +39,7 @@ public:
 
     tree::NodePtr parseObjective();
     tree::NodePtr parseNamespace();
-    tree::NodePtr parseFunction();
+    tree::FunctionPtr parseFunction();
     
     tree::NodePtr parseStorageDecl();
 
@@ -52,7 +52,12 @@ public:
     tree::NodePtr parseStatement();
     tree::BlockPtr parseBlock();
 
-    using VarSignature = std::pair<std::pair<std::optional<std::string>,size_t>,std::vector<std::string>>;
+    struct VarSignature {
+        std::optional<std::string> type;
+        size_t list_depth;
+        std::vector<std::string> modifiers;
+        bool is_link = false;
+    };
 
     VarSignature parseVarSignature();
 

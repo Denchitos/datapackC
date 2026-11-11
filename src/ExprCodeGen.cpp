@@ -138,6 +138,8 @@ Value ExprCodeGen::genBinaryOperator(const std::string& op, const Value& lhs,con
         throw std::runtime_error( "Unexpected expression triplet : "+op+" lhs - ["+fileCtx->typeToStr(lhs.type)+"] and rhs = ["+fileCtx->typeToStr(rhs.type)+"]" );
 }
 
+static Value genAssignStatic(FileCompilationContext* fileCtx,const  Value& lhs,const Value& rhs);
+
 static std::unordered_map<std::pair<Type,Type>,operator_form>  genAssign_map{
     { {Type::score,Type::score},[](FileCompilationContext* fileCtx,const Value& lhs,const Value& rhs)
     {
@@ -247,15 +249,9 @@ static std::unordered_map<std::pair<Type,Type>,operator_form>  genAssign_map{
                     else assignable_value.emplace_back(">");
                 }
             }
-            /// }
             Value new_lhs{assignable_value,assignable_type};
-            std::pair pair = {field_type,assignable_type};
 
-            auto it = genAssign_map.find(pair);
-
-            if ( it == genAssign_map.end() ) throw std::runtime_error(" Unknown Assigning operation [" + fileCtx->typeToStr(field_type) + "] and [" + fileCtx->typeToStr(assignable_type) + "]");
-            
-            (*it).second(fileCtx,field,new_lhs);
+            genAssignStatic(fileCtx,field,new_lhs);
         }
         return lhs;
     }}

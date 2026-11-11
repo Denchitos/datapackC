@@ -32,4 +32,6 @@ std::unordered_map<Token::Type,std::string> Token::type_strings = {
     { CBrace, "}" },
     { Colon, ":" },
     { Comma, "," },
+    { Dot, "." },
+    { Dollar, "$" },
 };

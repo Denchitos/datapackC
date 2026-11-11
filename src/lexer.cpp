@@ -180,6 +180,7 @@ void Lexer::parseSpecial()
         case ':': type = Token::Colon; break;
         case '@': type = Token::At; break;
         case '.': type = Token::Dot; break;
+        case '$': type = Token::Dollar; break;
     }
     current = c;
     flush(col,row);
@@ -195,7 +196,7 @@ std::vector<Token> Lexer::lex()
         if (c=='\n') parseEOL();
         else if (c=='#') parseComment();
         else if ( c== ' ' || c=='\t' ) { space_before = true;/*std::cout<<"\n"*/;next();}
-        else if ( c== ',' || c == ':' || c=='@' || c=='.') parseSpecial();
+        else if ( c== ',' || c == ':' || c=='@' || c=='.' || c=='$' ) parseSpecial();
         else if (c == '\"') parseLiteral();
         else if ( isOperatorSym(c)) parseOperator();
         else if ( c>='0' && c<='9' ) parseNumber();

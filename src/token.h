@@ -25,6 +25,7 @@ public:
         Colon,
         At,
         Dot,
+        Dollar,
     };
     std::string tok;
     size_t col = 0;

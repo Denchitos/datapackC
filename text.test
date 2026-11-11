@@ -65,16 +65,25 @@ def no_func(a : score) -> score
 
 storage custom 
 {
-    a : string,
-    b : string,
+    a : string
+    b : string
     c : string
 }
 
 storage bet
 {
-    a : int,
-    b : custom,
+    a : int
+    b : custom
     c : int
+    
+    def func(self : bet) -> score
+    {
+        print(self.b.a)
+
+        print_score(10)
+
+        return 10
+    }
 }
 
 def for_test(b : bet) -> custom
@@ -92,7 +101,17 @@ def say()
     raw say 55
 }
 
-def func2(a : score) -> score
+storage taq 
+{
+    list : bet[]
+}
+
+def testual()->int[]
+{
+    return {1,2,3}
+}
+
+def func2()
 {
     let y : int = 27
     let user = @s
@@ -106,22 +125,22 @@ def func2(a : score) -> score
     user.dms = 5
     user.say()
     let d : bet = { 5,{ "Hello","World","!" },5 }
-    
+
+    let ano = testual()[0]
+
+    print("There is called b.func()")
+    let axid = b.func()
+
     let zzz : int[] = { 55 , y ,66}
 
     let zzz2 : int[][] = { zzz,{5,5,5} }
 
-    let zzz_item = zzz[5]
-    let zzz_len = zzz.len()
+    print("There is called aboba.func()")
 
-    zzz_item = zzz2[1][0]
+    let x = zzz2[0][0]
 
+    let bets : bet[] = { b }
 
-    if ( a>5 )
-    {
-        return 50
-    }
-    else return 25
-
-    return 10
+    let aboba : taq = { bets }
+    aboba.list[0].func()
 }
