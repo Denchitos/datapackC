@@ -25,5 +25,6 @@ public:
     void visit(tree::Return*) override {};
     void visit(tree::StorageDecl*) override {};
     void visit(tree::InitList*) override {};
+    void visit(tree::InlinedFunction*) override {};
     virtual ~EmptyVisitor() = default;
 };

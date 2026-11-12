@@ -24,16 +24,23 @@ struct Function : public Node
     virtual ~Function() = default;
 };
 
-struct InlinedFunction : public Function
+using FunctionPtr = std::unique_ptr<Function>;
+
+struct InlinedFunction : public Node
 {
-    InlinedFunction(const Token& tok) : Function(tok) {}
+    BlockPtr body;
+    std::vector<VarDeclPtr> args;
+    InlinedFunction(const Token& tok) : Node(tok) {}
+    InlinedFunction(const Token& tok,FunctionPtr&& function) : Node(tok){
+        body = std::move(function->body);
+        args = std::move(function->args);
+    }
     
-    
-    void accept( Visitor* v )
-    {
+    void accept( Visitor* v ){
         v->visit(this);
     }
 };
 
-using FunctionPtr = std::unique_ptr<Function>;
+using InlinedPtr = std::unique_ptr<InlinedFunction>;
+
 TREE_END

@@ -4,6 +4,11 @@
 #include"tree/namespace.h"
 #include"tree/storage.h"
 
+static std::string getRowCol( tree::Node* node ) 
+{
+    return "[ " + std::to_string(node->getRow()) + " , " + std::to_string(node->getColumn()) + " ]";
+} 
+
 void StorageDeclVisitor::visit(tree::Namespace* nmsp)
 {
     fileCtx->currentNamespace = { nmsp->namespace_,nmsp->path };
@@ -12,9 +17,8 @@ void StorageDeclVisitor::visit(tree::Namespace* nmsp)
 void StorageDeclVisitor::visit(tree::StorageDecl* storage_decl)
 {
     if ( !fileCtx->registerType(storage_decl->getName()) )
-        throw std::runtime_error("Redefinition of type: '" + storage_decl->getName() + "' on line: " + storage_decl->getName() + " in row: " + storage_decl->getName() + " this type name is declared yet");
+        throw std::runtime_error(getRowCol(storage_decl)+" Redefinition of type: '" + storage_decl->getName() + "' on line: " + storage_decl->getName() + " in row: " + storage_decl->getName() + " this type name is declared yet");
 }
-
 
 Value FuncDeclVisitor::declArg(tree::VarDecl* varDecl)
 {
@@ -48,7 +52,7 @@ FunctionDeclaration FuncDeclVisitor::makeFuncDecl(tree::Function* func)
     {
         if ( arg != nullptr ){ 
             auto argument = declArg(arg.get());
-            if (argument.is_link) throw std::runtime_error( "Macro argument aren't implemented yet" );
+            if (argument.is_link) throw std::runtime_error( getRowCol(func)+" Macro arguments aren't implemented yet" );
             func_decl.args.emplace_back(argument);
         }
     }
@@ -71,7 +75,38 @@ FunctionDeclaration FuncDeclVisitor::makeFuncDecl(tree::Function* func)
 void FuncDeclVisitor::visit(tree::Function* func)
 {
     auto func_decl = makeFuncDecl(func);
-    fileCtx->registerFunc(func->getName(),std::move(func_decl));
+    if ( !fileCtx->registerFunc(func->getName(),std::move(func_decl) ) )
+        throw std::runtime_error(getRowCol(func)+" Redifinition of callable name '"+func->getName()+"'");
+}
+
+InlinedFunctionDeclaration FuncDeclVisitor::makeInlinedFuncDecl(tree::InlinedFunction* func)
+{
+    auto name = func->getName();
+    fileCtx->newFunction(name);
+    auto mc_name = fileCtx->currentFunction().toMinecraftPath();
+
+    InlinedFunctionDeclaration func_decl(mc_name);
+
+    for (auto& arg : func->args )
+    {
+        if ( arg != nullptr ){ 
+            auto argument = declArg(arg.get());
+            func_decl.args.emplace_back(arg->var_name,argument);
+        }
+    }
+
+    func_decl.body = func->body.get();
+
+    fileCtx->upFunction();
+    return func_decl;
+}
+
+void FuncDeclVisitor::visit(tree::InlinedFunction* func)
+{
+    //std::cout<<getRowCol(func)<<" DECLARATING INLINE '"+func->getName()+"'\n";
+    auto&& val = makeInlinedFuncDecl(func);
+    if ( !fileCtx->registerInlined(func->getName(),std::move(val) ) )
+        throw std::runtime_error(getRowCol(func)+" Redifinition of callable name '"+func->getName()+"'");
 }
 
 void FuncDeclVisitor::visit(tree::StorageDecl* storage_decl)
@@ -85,11 +120,10 @@ void FuncDeclVisitor::visit(tree::StorageDecl* storage_decl)
         {
             auto& name = field->var_name;
             auto& type_name = field->type;
-            //std::cout<<"Declaration '" << storage_name << "' field  : <" << name <<"> : <"<< type_name <<"> (" << field->list_depth << ")\n";
             auto type = fileCtx->strToType(type_name);
             type.list_depth = field->list_depth;
 
-            if ( storageDecl.fields.contains(name) ) throw std::runtime_error( "Redefinition of field in storage '"+storage_name+"'");
+            if ( storageDecl.fields.contains(name) ) throw std::runtime_error( getRowCol(storage_decl)+"Redefinition of field in storage '"+storage_name+"'");
 
             storageDecl.field_names.emplace_back(name);
             storageDecl.fields.emplace(name,type);
@@ -101,10 +135,19 @@ void FuncDeclVisitor::visit(tree::StorageDecl* storage_decl)
             for ( auto & method : storage_decl->methods )
             {
                 auto method_decl = makeFuncDecl(method.get());
-                //std::cout<<"Declared method " << method->getName();
-                //std::cout<<" ,has ret type? - " << method_decl.ret.has_value();
-                //std::cout<<"\n";
                 storageDecl.methods[method->getName()] = std::move(method_decl);
+            }
+
+            fileCtx->currentNamespace.pop();
+        }
+        if ( !storage_decl->inlined_methods.empty() )
+        {
+            fileCtx->currentNamespace.push(storage_decl->getName());
+
+            for ( auto & method : storage_decl->inlined_methods )
+            {
+                auto method_decl = makeInlinedFuncDecl(method.get());
+                storageDecl.inlined_methods[method->getName()] = std::move(method_decl);
             }
 
             fileCtx->currentNamespace.pop();

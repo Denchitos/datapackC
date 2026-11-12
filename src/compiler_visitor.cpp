@@ -19,6 +19,65 @@
 #include"tree/return.h"
 #include"types.h"
 
+std::string CompilerVisitor::generateDefaultNbt(const Type& type)
+{
+    if (type.list_depth > 0) {
+        return "[]"; // Для списков любого уровня вложенности
+    }
+    
+    switch (type.type) {
+        case Type::int_t:
+        case Type::score:
+            return "0";
+        case Type::float_t:
+            return "0.0d";
+        case Type::bool_t:
+        case Type::score_bool:
+            return "0b";
+        case Type::string:
+            return "\"\"";
+        case Type::struct_t: {
+            const auto& storage = fileCtx->getStorageDecl(type);
+            std::string result = "{";
+            for (size_t i = 0; i < storage.field_names.size(); ++i) {
+                if (i > 0) result += ",";
+                const auto& field_name = storage.field_names[i];
+                const auto& field_type = storage.fields.at(field_name);
+                result += field_name + ":" + generateDefaultNbt(field_type);
+            }
+            result += "}";
+            return result;
+        }
+        default:
+            return "{}"; // fallback
+    }
+}
+
+void CompilerVisitor::ensureVarInitialized(const Value& lhs)
+{
+    // Инициализируем скелет только для структур и списков (у них есть вложенные пути)
+    if (lhs.type.type != Type::struct_t && lhs.type.list_depth == 0) return;
+    
+    // Проверяем, что переменная лежит в storage (а не в scoreboard)
+    if (lhs.value.size() < 3 || lhs.value[0] != "storage") return;
+
+    std::string path = lhs.to_string();
+    
+    // Если уже инициализировали этот путь в load, пропускаем
+    if (fileCtx->initialized_structs.contains(path)) return;
+    fileCtx->initialized_structs.insert(path);
+    
+    std::string nbt = generateDefaultNbt(lhs.type);
+    
+    // lhs.value[1] — это имя storage (например, "global:dp/func2")
+    // lhs.value[2] — это имя переменной (например, "aboba")
+    std::string storage_id = lhs.value[1];
+    std::string var_name = lhs.value[2];
+
+    // Генерируем: data merge storage global:dp/func2 {aboba:{list:[]}}
+    fileCtx->printToLoad("data merge storage " + storage_id + " {" + var_name + ":" + nbt + "}");
+}
+
 CompilerVisitor::CompilerVisitor(std::shared_ptr<FileCompilationContext> ctx,std::shared_ptr<ExprCodeGen> codeG) : fileCtx(ctx),codeGen(codeG)
 {
 
@@ -127,33 +186,33 @@ void CompilerVisitor::visit(tree::VarDecl* vardecl)
     std::vector<std::string> value{name};
 
     if ( !vardecl->expr ){
-        if (type.type==Type::auto_t)
-        {
-            throw std::runtime_error("Здесь невозможен автоматический вывод типа");
-        }
+        if (type.type==Type::auto_t) throw std::runtime_error("Здесь невозможен автоматический вывод типа");
+        
         value = fileCtx->nameMangle(type,name);
         fileCtx->registerVar(name,{value,type,isMut});
+        
+        //ensureVarInitialized(Value(value, type, name)); 
     } else {
-    vardecl->expr->accept(this);
+        vardecl->expr->accept(this);
 
-    auto rhs = std::move(op_stack.top());
-    op_stack.pop();
+        auto rhs = std::move(op_stack.top());
+        op_stack.pop();
 
-    if ( type.type == Type::auto_t ){
-        type = typeInferrence(rhs);
-    }
+        if ( type.type == Type::auto_t ){
+            type = typeInferrence(rhs);
+        }
 
-    value = fileCtx->nameMangle(type,name);
-    Value lhs{ value,type,name };
-    
-    fileCtx->registerVar(name,{value,type,isMut});
-    
-    try { codeGen->genBinaryOperator("=",lhs,rhs); }
-    catch( std::exception& e )
-    {
-        throw std::runtime_error( getRowCol(vardecl) + e.what() );
-    }
-    
+        value = fileCtx->nameMangle(type,name);
+        Value lhs{ value,type,name };
+        
+        fileCtx->registerVar(name,{value,type,isMut});
+        
+        //ensureVarInitialized(lhs); 
+
+        try { codeGen->genBinaryOperator("=",lhs,rhs); }
+        catch( std::exception& e ) {
+            throw std::runtime_error( getRowCol(vardecl) + e.what() );
+        }
     }
 }
 
@@ -287,8 +346,15 @@ void CompilerVisitor::genCallMemberAccess(tree::Call* call, Value& value,size_t 
             auto method_decl = storage_decl.methods[call->getName()];
             std::vector<Value> call_args{ value };
             for ( auto& arg : call->call_args ){ arg->accept(this) ; call_args.emplace_back(getTopOperand()) ; }
-            emitCall(call_args,method_decl);
+            emitCallFunction(call_args,method_decl);
             value = getTopOperand();
+        }
+        else if ( storage_decl.inlined_methods.contains(call->getName()) )
+        {
+            auto method_decl = storage_decl.inlined_methods[call->getName()];
+            std::vector<Value> call_args{ value };
+            for ( auto& arg : call->call_args ){ arg->accept(this) ; call_args.emplace_back(getTopOperand()) ; }
+            emitCallInlined(call_args,method_decl);
         }
         else throw std::runtime_error( getRowCol(call) +" Unknown member function '" + call->getName() +"'");
     }
@@ -533,7 +599,7 @@ void CompilerVisitor::visit(tree::ScheduledWhile* While)
     fileCtx->println("function "+ cb_name);
 }
 
-void CompilerVisitor::emitCall(const std::vector<Value>& call_args,FunctionDeclaration& fd)
+void CompilerVisitor::emitCallFunction(const std::vector<Value>& call_args,FunctionDeclaration& fd)
 {
     auto got_args_num = call_args.size();
     auto expected_args_num = fd.args.size();
@@ -561,10 +627,44 @@ void CompilerVisitor::emitCall(const std::vector<Value>& call_args,FunctionDecla
     }
 }
 
+void CompilerVisitor::emitCallInlined(const std::vector<Value>& call_args,InlinedFunctionDeclaration& fd)
+{
+    auto got_args_num = call_args.size();
+    auto expected_args_num = fd.args.size();
+    if ( got_args_num != expected_args_num )
+    {
+        throw std::runtime_error("Function exepcted "+std::to_string(expected_args_num)+" ,but got "+std::to_string(got_args_num));
+    }
+
+    size_t i = 0;
+    
+    fileCtx->symbols.emplace();
+
+    for ( auto& arg : call_args )
+    {
+        auto& value = fd.args[i].second;
+        auto& name = fd.args[i].first;
+        if ( value.is_link ){
+            fileCtx->registerVar( name, { arg.value , arg.type } );
+        }
+        else{
+            codeGen->genAssign( value ,arg );
+            fileCtx->registerVar( name, { value.value , value.type } );
+        }
+        i++;
+    }
+    is_in_inlined_function = true;
+    fd.body->accept(this);
+    is_in_inlined_function = false;
+    fileCtx->symbols.pop();
+}
+
 void CompilerVisitor::visit(tree::Call* call)
 {
     auto& name = call->getName();
-    if ( !fileCtx->hasFunc(name) )
+    bool is_function = fileCtx->hasFunc(name);
+    bool is_inlined = fileCtx->hasInlined(name);
+    if ( !is_function && !is_inlined )
     {
         throw std::runtime_error( getRowCol(call) + " Unknown name to call :" + name);
     }
@@ -577,7 +677,10 @@ void CompilerVisitor::visit(tree::Call* call)
     }
 
     try {
-        emitCall(call_args,fileCtx->getFuncDecl(name));
+        if ( is_function )
+            emitCallFunction(call_args,fileCtx->getFuncDecl(name));
+        else if ( is_inlined )
+            emitCallInlined(call_args,fileCtx->getInlinedDecl(name));
     }
     catch ( std::exception& e )
     {
@@ -587,6 +690,11 @@ void CompilerVisitor::visit(tree::Call* call)
 
 void CompilerVisitor::visit(tree::Return* ret)
 {
+    if ( is_in_inlined_function )
+    {
+        throw std::runtime_error(getRowCol(ret) + " In Inlined Function can't be a return statement");
+    }
+
     auto name = fileCtx->realFunction().getName();
 
     FunctionDeclaration funcDecl; 
@@ -595,7 +703,7 @@ void CompilerVisitor::visit(tree::Return* ret)
 
     if ( funcDecl.ret.has_value() )
     {
-        if ( ret->expr == nullptr ) throw std::runtime_error("In function that returns value, return statement exists without returning expression");
+        if ( ret->expr == nullptr ) throw std::runtime_error( getRowCol(ret) + " In function that returns value, return statement exists without returning expression");
         auto retval = funcDecl.ret.value();
         ret->expr->accept(this);
         auto expr = getTopOperand();

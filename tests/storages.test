@@ -1,0 +1,220 @@
+#пример
+
+namespace global:dp
+
+storage custom 
+{
+    a : string
+    b : string
+    c : string
+}
+
+storage bet
+{
+    a : int
+    b : custom
+    c : int
+}
+
+storage taq 
+{
+    list : bet[]
+}
+
+def print(str : string)
+{
+    raw tellraw @a { %str.0% : %:str.1%,nbt:%:str.2%,interpret:true }
+}
+
+def print_score( a : score )
+{
+    raw tellraw @a ["score a is ",{ score:{name:%:a.0%,objective:%:a.1%} }]
+}
+
+def print_int(str : int)
+{
+    raw tellraw @a { %str.0% : %:str.1%,nbt:%:str.2%,interpret:true }
+}
+
+
+
+def test_struct_basic()
+{
+    let s : custom = { "Hello", "World", "!" }
+
+    print(s.a)
+    print(s.b)
+    print(s.c)
+
+    let check : score = 3
+    if (check == 3)
+    {
+        print("basic: OK")
+    }
+    else
+    {
+        print("basic: FAIL")
+    }
+}
+
+def test_struct_modify()
+{
+    let s : custom = { "one", "two", "three" }
+
+    s.a = "uno"
+    s.b = "dos"
+    s.c = "tres"
+
+    print(s.a)
+    print(s.b)
+    print(s.c)
+
+    let check : score = 1
+    if (check > 0)
+    {
+        print("modify: OK")
+    }
+    else
+    {
+        print("modify: FAIL")
+    }
+}
+
+def test_struct_nested()
+{
+    let inner : custom = { "x", "y", "z" }
+    let outer : bet = { 42, inner, 99 }
+
+    print(outer.b.a)
+    print(outer.b.b)
+    print(outer.b.c)
+
+    outer.b.a = "modified"
+    print(outer.b.a)
+
+    let check : score = 7
+    if (check == 7)
+    {
+        print("nested: OK")
+    }
+    else
+    {
+        print("nested: FAIL")
+    }
+}
+
+def test_struct_deep()
+{
+    let c : custom = { "deep_a", "deep_b", "deep_c" }
+    let b : bet = { 1, c, 2 }
+    let arr : bet[] = { b }
+    let t : taq = { arr }
+
+    # taq -> bet[] -> [0] -> bet -> custom -> string
+    print(t.list[0].b.a)
+    print(t.list[0].b.b)
+    print(t.list[0].b.c)
+
+    # Модифицируем поле на глубине 4
+    t.list[0].b.a = "modified_deep"
+    print(t.list[0].b.a)
+
+    let check : score = 4
+    if (check == 4)
+    {
+        print("deep: OK")
+    }
+    else
+    {
+        print("deep: FAIL")
+    }
+}
+
+def general()
+{
+    print("========== basic ==========")
+    test_struct_basic()
+    print("========== modify ==========")
+    test_struct_modify()
+    print("========== nested ==========")
+    test_struct_nested()
+    print("========== deep ==========")
+    test_struct_deep()
+    print("========== all done ==========")
+}
+
+
+storage item
+{
+    name : string
+    damage : int
+}
+
+storage inventory
+{
+    owner : string
+    slots : item[]
+}
+
+storage player
+{
+    nick : string
+    health : int
+    backpack : inventory
+    
+    def heal(self : player) -> score
+    {
+        print("Healing player:")
+        print(self.nick)
+        return 1
+    }
+}
+
+
+def print_str(s : string)
+{
+    raw tellraw @a ["String: ", "%:s.1%"]
+}
+
+def inspect_inventory(inv : inventory)
+{
+    print("--- Inspecting Passed Inventory ---")
+    print(inv.owner)
+    print(inv.slots[0].name)
+    print("-----------------------------------")
+}
+
+def test_taq_all_ways()
+{
+    print("=== 1. Через полный InitList (литералы) ===")
+    # Создаем taq, где сразу пишем массив структур в фигурных скобках
+    let t1 : taq = { { { 10, { "A", "B", "C" }, 20 } } }
+    print(t1.list[0].b.a) # Ожидаем A
+    print(t1.list[0].b.b) # Ожидаем B
+
+    print("=== 2. Через переменные (ломающийся кейс) ===")
+    # Создаем структуру, массив, а потом кладем массив в taq через init-list
+    let b1 : bet = { 1, { "X", "Y", "Z" }, 2 }
+    let arr1 : bet[] = { b1 }
+    
+    let t2 : taq = { arr1 }
+    print(t2.list[0].b.a) # Ожидаем X (а не прошлый результат A)
+    print(t2.list[0].b.b) # Ожидаем Y
+
+    print("=== 3. Прямое копирование структуры ===")
+    # Копируем t2 в t3 (без init-list, просто присваивание)
+    let t3 : taq = t2
+    print(t3.list[0].b.a) # Ожидаем X
+
+    print("=== 4. Присваивание в существующую структуру ===")
+    # Инициализируем t4 СОВЕРШЕННО НОВЫМИ данными
+    let t4 : taq = { { { 99, { "OLD", "OLD", "OLD" }, 99 } } }
+    print(t4.list[0].b.a) # Ожидаем OLD (проверка, что инициализация прошла)
+    
+    # Теперь перезаписываем
+    t4 = { arr1 }
+    print(t4.list[0].b.c) # Ожидаем Z
+    print(t4.list[0].b.a) # Ожидаем X (а не OLD!)
+
+    print("=== taq tests done ===")
+}

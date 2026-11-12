@@ -8,6 +8,7 @@
 #include<unordered_set>
 #include"types.h"
 #include"iterable_stack.h"
+#include"tree/block.h"
 struct Symbol
 {
     std::vector<std::string> value;
@@ -117,11 +118,22 @@ struct FunctionDeclaration
     FunctionDeclaration(const std::string& m_name,std::vector<Value>&& args) : minecraft_name(m_name) {}
 };
 
+struct InlinedFunctionDeclaration
+{
+    std::string minecraft_name;
+    std::vector<std::pair<std::string,Value>> args;
+    tree::Block* body;
+    InlinedFunctionDeclaration() = default;
+    InlinedFunctionDeclaration(const std::string& m_name) : minecraft_name(m_name) {}
+    InlinedFunctionDeclaration(const std::string& m_name,std::vector<Value>&& args) : minecraft_name(m_name) {}
+};
+
 struct StorageDeclaration
 {
     std::vector<std::string> field_names;
     std::unordered_map<std::string,Type> fields;
     std::unordered_map<std::string,FunctionDeclaration> methods;
+    std::unordered_map<std::string,InlinedFunctionDeclaration> inlined_methods;
 
     bool hasField(const std::string& field) const
     {
@@ -134,9 +146,9 @@ struct FileCompilationContext
 private:
     std::optional<Function> load_file;
     std::optional<Function> tick_file;
-
     IterableStack<Function> function_stack;
     
+    std::unordered_map<std::string,InlinedFunctionDeclaration> declared_inlined_functions;
     std::unordered_map<std::string,FunctionDeclaration> declared_functions;
     std::unordered_map<std::string,StorageDeclaration > declared_storages;
 
@@ -148,6 +160,8 @@ private:
 
     int types_counter = 0;
 public:
+
+    std::unordered_set<std::string> initialized_structs;
 
     IterableStack<std::unordered_map<std::string,Symbol>> symbols;
     IterableStack<std::string> while_break_stack;
@@ -279,9 +293,33 @@ public:
 
     bool registerFunc(const std::string& name,FunctionDeclaration&& funcDecl)
     {
-        if ( declared_functions.contains(name) ) return false;
+        if ( declared_inlined_functions.contains(name) || declared_functions.contains(name) ) return false;
         declared_functions[name] = std::move(funcDecl);
         return true;
+    }
+    bool hasFunc(const std::string& name) const
+    {
+        return declared_functions.contains(name);
+    }
+    FunctionDeclaration& getFuncDecl(const std::string& name)
+    {
+        return declared_functions.at(name);
+    }
+
+    bool registerInlined(const std::string& name,InlinedFunctionDeclaration&& funcDecl)
+    {
+        if ( declared_inlined_functions.contains(name) || declared_functions.contains(name) ) return false;
+        declared_inlined_functions[name] = std::move(funcDecl);
+        return true;
+    }
+    bool hasInlined(const std::string& name) const
+    {
+        return declared_inlined_functions.contains(name);
+    }
+
+    InlinedFunctionDeclaration& getInlinedDecl(const std::string& name)
+    {
+        return declared_inlined_functions.at(name);
     }
 
     bool registerStorage(const std::string& name,StorageDeclaration&& storageDecl)
@@ -291,10 +329,6 @@ public:
         return true;
     }
 
-    bool hasFunc(const std::string& name) const
-    {
-        return declared_functions.contains(name);
-    }
 
     bool hasStorage(const std::string& name) const
     {
@@ -311,16 +345,10 @@ public:
         if ( declared_storages.contains(name) ) return declared_storages.at(name);
         else throw std::runtime_error("Unknown string "+ name + " while trying to converse it to StorageDecl ");
     }
-
     StorageDeclaration& getStorageDecl(const Type& type)
     {
         auto name = typeToStr(type);
         return getStorageDecl(name);
-    }
-
-    FunctionDeclaration& getFuncDecl(const std::string& name)
-    {
-        return declared_functions.at(name);
     }
 
     void print(const std::string&);

@@ -22,7 +22,12 @@ std::vector<tree::NodePtr> Parser::parse()
 
     while (!atEnd())
     {
-        if (compare(Token{"def",Token::Word})) v.emplace_back(parseFunction());
+        if (match(Token{"def",Token::Word})) v.emplace_back(parseFunction(true));
+        else if (match(Token{"inline",Token::Word})){
+            auto& tok = look();
+            auto inl = parseFunction(false);
+            v.emplace_back(std::make_unique<tree::InlinedFunction>(tok,std::move(inl)));
+        }
         else if (compare(Token{"namespace",Token::Word})) v.emplace_back(parseNamespace());
         else if (compare(Token{"objective",Token::Word})) v.emplace_back(parseObjective());
         else if (compare(Token{"storage",Token::Word})) v.emplace_back(parseStorageDecl());
@@ -91,16 +96,23 @@ tree::NodePtr Parser::parseStorageDecl()
     while ( true )
     {
         //std::cout<<"STORAGE DECL CYCLE " << look().tok<<"\n";
-        if ( !compare(Token{"def",Token::Word}) && compare(Token::Word) ) {            
-            storage->pushField(parseVarDecl(false));
+        if ( match(Token{"def",Token::Word} ) ){
+            storage->pushMethod(parseFunction(true));
             match(Token::EL);
         }
-        else if ( compare(Token{"def",Token::Word} ) ){
-            storage->pushMethod(parseFunction());
+        else if ( match(Token{"inline",Token::Word} ) ){
+            auto& tok = look();
+            auto inl = parseFunction(false);
+            auto inl_ptr = std::make_unique<tree::InlinedFunction>(tok,std::move(inl));
+            storage->pushInlined(std::move(inl_ptr));
             match(Token::EL);
         }
         else if ( compare(Token::CBrace) )
             break;
+        else if ( compare(Token::Word ) ) {            
+            storage->pushField(parseVarDecl(false));
+            match(Token::EL);
+        }
         else {
             error("Unexpected Token");
             statementPanic();
@@ -116,10 +128,8 @@ tree::NodePtr Parser::parseStorageDecl()
     return storage;
 }
 
-tree::FunctionPtr Parser::parseFunction()
+tree::FunctionPtr Parser::parseFunction( bool can_have_return )
 {
-    if (!expect(Token{"def",Token::Word},"Expected 'def' in function defining") ) return nullptr;
-
     if (!expect(Token::Word,"Expected a WORD as a function name")) return nullptr;
     
     auto function = std::make_unique<tree::Function>(look(-1));
@@ -128,8 +138,9 @@ tree::FunctionPtr Parser::parseFunction()
     
     if ( compare(Token::OParen) ) function->args = parseFunctionArg();
 
-    if ( match(Token{"->",Token::Operator}) )
+    if ( compare(Token{"->",Token::Operator}) && can_have_return )
     {
+        next();
         auto [ type_name,list_depth,modifeirs,is_link ] = parseVarSignature();
         if ( is_link )
         {
@@ -143,6 +154,11 @@ tree::FunctionPtr Parser::parseFunction()
 
         function->ret_type = { type_name.value() , list_depth};
         next();
+    }
+    else if (compare(Token{"->",Token::Operator}) && !can_have_return)
+    {
+        error("Return type is unexpected here");
+        statementPanic();
     }
 
     match(Token::EL);

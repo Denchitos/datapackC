@@ -4,6 +4,18 @@ namespace global:dp
 
 objective dms
 
+inline test_inline( b : score )
+{
+    print_score(b)
+}
+
+def testy_test()
+{
+    let x : score = 15
+
+    test_inline(x)
+}
+
 def test_string()
 {
     print_score(5)
@@ -76,13 +88,11 @@ storage bet
     b : custom
     c : int
     
-    def func(self : bet) -> score
+    inline func(self : $ bet)
     {
         print(self.b.a)
 
         print_score(10)
-
-        return 10
     }
 }
 

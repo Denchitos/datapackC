@@ -11,12 +11,18 @@ struct StorageDecl : public Node
     std::string name;
     std::vector<VarDeclPtr> fields;
     std::vector<FunctionPtr> methods;
+    std::vector<InlinedPtr> inlined_methods;
 
     StorageDecl(const Token& tok) : Node(tok){}
 
     void pushMethod(FunctionPtr&& method)
     {
         methods.emplace_back(std::move(method));
+    }
+
+    void pushInlined(InlinedPtr&& method)
+    {
+        inlined_methods.emplace_back(std::move(method));
     }
 
     void pushField(VarDeclPtr&& var_decl)

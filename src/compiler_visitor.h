@@ -17,7 +17,11 @@ class CompilerVisitor : public Visitor
     IterableStack<Value> op_stack;
 
     StorageDeclaration* current_storage = nullptr;
+
+    bool is_in_inlined_function = false;
 public:
+    std::string generateDefaultNbt(const Type& type);
+    void ensureVarInitialized(const Value& lhs);
     std::vector<Function> compiled_functions;
     CompilerVisitor(std::shared_ptr<FileCompilationContext>,std::shared_ptr<ExprCodeGen>);
 
@@ -51,7 +55,8 @@ public:
     void visit(tree::ScheduledWhile*);
     void visit(tree::Break*) override;
     void visit(tree::Call*) override;
-        void emitCall(const std::vector<Value>& call_args,FunctionDeclaration& fd);
+        void emitCallFunction(const std::vector<Value>& call_args,FunctionDeclaration& fd);
+        void emitCallInlined(const std::vector<Value>& call_args,InlinedFunctionDeclaration& fd);
     void visit(tree::Return*) override;
     void visit(tree::StorageDecl* ) override;
 
@@ -80,4 +85,6 @@ public:
 
         op_stack.emplace(value,Type::initializer_list);
     };
+
+    void visit(tree::InlinedFunction*) override {}
 };

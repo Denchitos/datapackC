@@ -39,8 +39,7 @@ public:
 
     tree::NodePtr parseObjective();
     tree::NodePtr parseNamespace();
-    tree::FunctionPtr parseFunction();
-    
+    tree::FunctionPtr parseFunction( bool can_have_return ); 
     tree::NodePtr parseStorageDecl();
 
     std::vector<tree::VarDeclPtr> parseFunctionArg();

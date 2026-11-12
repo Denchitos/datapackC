@@ -275,6 +275,7 @@ static Value genAssignStatic(FileCompilationContext* fileCtx,const  Value& lhs,c
 
     if ( lhs.type.list_depth != 0 && rhs.type.list_depth == lhs.type.list_depth && lhs.type.type == rhs.type.type )
     {
+        fileCtx->println( "data modify "+lhs.to_string() + " set value []" );
         fileCtx->println( "data modify "+lhs.to_string() + " set from " + rhs.to_string() );
         return lhs ;
     }
@@ -323,7 +324,7 @@ static Value genAssignListInitList(FileCompilationContext* fileCtx,const Value& 
 
     for ( size_t i = 0 ; i < init_list_len ; i++ )
     {
-        initialize += "0,";
+        initialize += "{},";
     }
     initialize.pop_back();
 
