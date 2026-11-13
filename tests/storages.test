@@ -1,6 +1,6 @@
 #пример
 
-namespace global:dp
+namespace tests
 
 storage custom 
 {
@@ -21,7 +21,7 @@ storage taq
     list : bet[]
 }
 
-def print(str : string)
+inline print(str : $ string)
 {
     raw tellraw @a { %str.0% : %:str.1%,nbt:%:str.2%,interpret:true }
 }

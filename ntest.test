@@ -1,0 +1,52 @@
+namespace item
+
+inline print_int(i : $ int)
+{
+    raw tellraw @a { %i.0% : %:i.1%,nbt:%:i.2%,interpret:false }
+}
+
+
+inline print(str : $ string)
+{
+    raw tellraw @a { %str.0% : %:str.1%,nbt:%:str.2%,interpret:true }
+}
+
+storage item
+{
+  count : int
+  name : string
+
+  inline rename( self : $ item , str : $ string )
+  {
+    self.name = str
+  }
+
+  def make_1_copy( self : item ) -> item # <-- Функция делает копию но её count будет один.
+  {
+      return { 1,self.name }
+  }
+
+  inline print(self : $ item)
+  {
+      print("Имя предмета:")
+      print(self.name)
+      print("Количество")
+      print_int(self.count)
+  }
+}
+
+
+def main()
+{
+    let a : item = { 5,"minecraft:diamond" }
+
+    a.print()
+    a.rename("minecraft:emerald") # <-- Обратите внимание, что первый аргумент передавать не нужно.
+    a.print()
+
+    a.count = 15
+    a.print()
+
+    let b = a.make_1_copy()
+    b.print()
+}
