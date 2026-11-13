@@ -539,9 +539,13 @@ let a = "Hello world!"
    %a.0%       %a.1%   %a.2% 
 ```
 
-И вот пример функции которая выводит строку
+И вот пример функции которая выводит строку в чат
+
+```text
 
 inline print(str : $ string)
 {
     raw tellraw @a { %str.0% : %:str.1%,nbt:%:str.2%,interpret:true }
 }
+
+```
