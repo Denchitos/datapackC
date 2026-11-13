@@ -3,6 +3,7 @@
 #include"tree/function.h"
 #include"tree/namespace.h"
 #include"tree/storage.h"
+#include"tree/objective.h"
 
 static std::string getRowCol( tree::Node* node ) 
 {
@@ -18,6 +19,12 @@ void StorageDeclVisitor::visit(tree::StorageDecl* storage_decl)
 {
     if ( !fileCtx->registerType(storage_decl->getName()) )
         throw std::runtime_error(getRowCol(storage_decl)+" Redefinition of type: '" + storage_decl->getName() + "' on line: " + storage_decl->getName() + " in row: " + storage_decl->getName() + " this type name is declared yet");
+}
+
+void StorageDeclVisitor::visit(tree::Objective* obj)
+{
+    if ( !fileCtx->registerObjective(obj->name) )
+        throw std::runtime_error(getRowCol(obj) + "  Redifinitaion of objective '"+obj->name+"'" );
 }
 
 Value FuncDeclVisitor::declArg(tree::VarDecl* varDecl)

@@ -127,7 +127,7 @@ def func2()
     let user = @s
     let c : custom = { "Hello","World","!" }
     let b : bet = {5,c,5}
-    @s.a = 15
+    @s.dms = 15
     let zoomba = b.b.c
     let hun : string = for_test(b).a
     let amo = for_test2(5)

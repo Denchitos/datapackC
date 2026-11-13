@@ -165,8 +165,6 @@ std::vector<std::string> FileCompilationContext::nameMangle(const Type& type,con
         return { "storage",currentFunction().toMinecraftPath(),name };
     }
     
-    else if ( type.type==Type::objective ) { return {currentNamespace.toDotPath()+'.'+name};}
-    
     else return {name};
 }
 
@@ -180,6 +178,6 @@ std::vector<std::string> FileCompilationContext::nameMangle(Function& func,const
     {
         return { "storage",func.toMinecraftPath(),name };
     }
-    else if ( type.type==Type::objective ) { return {func.nmsp.toDotPath()+'.'+name};}
+
     else return {name};
 }

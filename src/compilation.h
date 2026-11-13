@@ -147,6 +147,8 @@ private:
     std::optional<Function> load_file;
     std::optional<Function> tick_file;
     IterableStack<Function> function_stack;
+
+    std::unordered_map<std::string,std::string> registered_objectives;
     
     std::unordered_map<std::string,InlinedFunctionDeclaration> declared_inlined_functions;
     std::unordered_map<std::string,FunctionDeclaration> declared_functions;
@@ -160,8 +162,8 @@ private:
 
     int types_counter = 0;
 public:
-
-    std::unordered_set<std::string> initialized_structs;
+    
+std::unordered_set<std::string> initialized_structs;
 
     IterableStack<std::unordered_map<std::string,Symbol>> symbols;
     IterableStack<std::string> while_break_stack;
@@ -322,12 +324,31 @@ public:
         return declared_inlined_functions.at(name);
     }
 
+    bool registerObjective(const std::string& name)
+    {
+        if ( registered_objectives.contains(name) ) return false;
+        registered_objectives[name] = currentNamespace.toDotPath()+'.'+name;
+        return true;
+    }
+
+    bool hasObjective(const std::string& name)
+    {
+        return registered_objectives.contains(name);
+    }
+
     bool registerStorage(const std::string& name,StorageDeclaration&& storageDecl)
     {
         if ( declared_functions.contains(name) ) return false;
         declared_storages[name] = std::move(storageDecl);
         return true;
     }
+
+    const std::string& getObjective(const std::string& name)
+    {
+        auto it = registered_objectives.find(name);
+        if ( it == registered_objectives.end() ) throw std::runtime_error("Unknown objective '"+name+"'");
+        return it->second;
+    } 
 
 
     bool hasStorage(const std::string& name) const

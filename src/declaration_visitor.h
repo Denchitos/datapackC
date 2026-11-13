@@ -11,6 +11,7 @@ public:
     StorageDeclVisitor(std::shared_ptr<FileCompilationContext> ctx) : fileCtx(ctx) {}
     void visit(tree::Namespace*) override;
     void visit(tree::StorageDecl*) override;
+    void visit(tree::Objective*) override;
 };
 
 class FuncDeclVisitor : public EmptyVisitor

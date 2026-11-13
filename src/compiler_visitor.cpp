@@ -119,7 +119,7 @@ static std::string getRowCol( tree::Node* node )
     return "[ " + std::to_string(node->getRow()) + " , " + std::to_string(node->getColumn()) + " ]";
 } 
 
-//RETURN LAST TWO OPERANDS [ PRE-LAST , LAST ] AND REMOVES IT FORM STACK
+//RETURN LAST TWO OPERANDS [ PRE-LAST , LAST ] AND REMOVES IT FROM STACK
 
 std::pair<Value,Value> CompilerVisitor::getTwoOperands()
 {   
@@ -257,6 +257,7 @@ void CompilerVisitor::visit(tree::MemberAccess* mem)
     {
         if ( auto var = exprCast<tree::Variable>( members[i].get() ) ) genStructMemberAccess(var,value,i);
         else if ( auto call = exprCast<tree::Call>( members[i].get() ) ) genCallMemberAccess(call,value,i);
+        else if ( auto call = exprCast<tree::RawSelector>( members[i].get() ) ) genSelectorMemberAccess(call,value,i);
         else throw std::runtime_error(getRowCol(mem->members[i].get()) +" Unexpected Situation in member access");
     }
     op_stack.emplace(value);
@@ -271,20 +272,18 @@ void CompilerVisitor::genStructMemberAccess(tree::Variable* var,Value& value,siz
         value.value = sym.value;
         i++;
     }
-    else if ( value.type == Type::rawSelector || value.type == Type::selector )
+    else if ( value.type == Type::selector || value.type == Type::rawSelector )
     {
-        i++;
-        try {
-            auto & sym = fileCtx->getSymbol(var->getName());
-            if ( sym.type != Type::objective )
-                throw std::runtime_error("After selector expected a function call or objective, but got "+ fileCtx->typeToStr(value.type));
-            value.value = { value.to_string() , sym.value[0] };
-            value.type = Type(Type::score);
+        try
+        {
+            value.value = { value.to_string() , fileCtx->getObjective(var->getName()) };
+            value.type = Type::score;
         }
         catch( std::exception& e )
         {
-        throw std::runtime_error( getRowCol(var) + e.what() );
+            throw std::runtime_error( getRowCol(var) + e.what() );
         }
+        i++;
     }
     else
     {
@@ -362,23 +361,9 @@ void CompilerVisitor::genCallMemberAccess(tree::Call* call, Value& value,size_t 
 
 void CompilerVisitor::genSelectorMemberAccess(tree::RawSelector* call, Value& value,size_t &i)
 {
-    // if (size==2)
-    //     {
-    //         auto objective = fileCtx->getSymbol(members[i]);            
-    //         if ( objective.type.type == Type::objective )
-    //         {
-    //             std::vector v = {fileCtx->getSymbol(members[0]).value[0],fileCtx->getSymbol(members[1]).value[0]};
-    //             op_stack.emplace(v,Type::score);
-    //         }
-    //         else
-    //         {
-    //             throw std::runtime_error( getRowCol(node)+ " " +members[i] + " doesn't names an objective in this scope");
-    //         }
-    //     }
-    //     else
-    //     {
-    //         throw std::runtime_error( getRowCol(node) +" If you start member accessing with selector expected an objective it");
-    //     }
+    i++;
+    visit(call);
+    value = getTopOperand(); 
 }
 
 void CompilerVisitor::visit(tree::Variable* var)
@@ -433,10 +418,13 @@ void CompilerVisitor::visit(tree::BinaryOperator* binop)
 
 void CompilerVisitor::visit(tree::Objective* obj)
 {
-    auto name = obj->name;
-    auto value = fileCtx->nameMangle(Type::objective,name);
-    fileCtx->registerVar(name,{value,Type::objective,true});
-    fileCtx->printToLoad("scoreboard objectives add "+ value[0] + " dummy");
+    try {
+        fileCtx->printToLoad("scoreboard objectives add "+ fileCtx->getObjective(obj->name) + " dummy");
+    }
+    catch(std::exception& e)
+    {
+        throw std::runtime_error(getRowCol(obj) + " " + e.what());
+    }
 }   
 
 void CompilerVisitor::visit(tree::Raw* raw)

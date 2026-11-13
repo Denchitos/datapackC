@@ -17,7 +17,7 @@ struct Type
     enum Kind : int
     {
         void_t,
-        auto_t,score,score_bool,selector,objective,
+        auto_t,score,score_bool,selector,
         numberLiteral,boolLiteral,rawSelector,textLiteral,
         int_t,float_t,bool_t,string,
         struct_t,
