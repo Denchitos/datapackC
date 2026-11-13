@@ -507,7 +507,7 @@ inline print_score(a : $ score)
 
 Но не учли следующее
 
-***"%a.0%" - компиялтор воспримет как один строковый литерал, т.е. это здесь нет никакого синтаксиса в просто подставиться в поле name и objective строки "%a.0%" и "%a.1%" соответственно
+***"%a.0%"*** - компилятор воспримет как один строковый литерал, т.е. это не специальный синтаксис, а просто подставиться в поле name и objective строки "%a.0%" и "%a.1%" соответственно
 
 И для этой проблемы есть решение.
 
@@ -549,3 +549,174 @@ inline print(str : $ string)
 }
 
 ```
+
+---
+
+## Хранилища storage
+
+---
+
+Часто в датапаках приходится работать со storage
+
+И datapackC это предусматривает
+
+---
+
+Синтаксис следующий
+
+```text
+  storage <название хранилища>
+  {
+    <имя поля1> : <тип поля1>
+    <имя поля2> : <тип поля2>
+    .........................
+    <имя поляN> : <тип поляN>
+  }
+```
+
+Пример
+
+```text
+
+storage item
+{
+  count : int
+  name : string
+}
+
+inline rename( it : $ item, str : $ string )
+{
+  it.name = str
+}
+
+def main()
+  {
+    let a : item = { 5,"minecraft:diamond" } # <-- Так хранилище инициализируется
+
+    let c = a.count # <-- Так обращаться к полю структуры
+
+    #и естественно их можно передавать внутрь функций
+
+    rename(a,"minecraft:emerald")
+  }
+```
+
+Если вы достаточно опытный разработчик, вам могло показаться, что было бы удобно хранить функцию rename вместе со storage item
+
+Т.е. чтобы rename был методом структуры item и это тоже возможно
+
+```text
+
+storage item
+{
+  count : int
+  name : string
+
+  inline rename( self : $ item , str : $ string ) # <-- структура обязана быть первым параметром ( её не обязательно передавать как подставляемый аргумент )
+  {
+    self.name = str
+  }
+}
+
+def main()
+  {
+    let a : item = { 5,"minecraft:diamond" }
+
+    #Вызов будет выглядеть так
+    a.rename("minecraft:emerald") # <-- Обратите внимание, что первый аргумент передавать не нужно.
+  }
+```
+
+Также методом могут быть и def функции.
+
+```text
+
+storage item
+{
+  count : int
+  name : string
+
+  inline rename( self : $ item , str : $ string )
+  {
+    self.name = str
+  }
+
+  def make_1_copy( self : item , str : string ) -> item # <-- Функция делает копию но её count будет один.
+  {
+      return { 1,self.name }
+  }
+}
+
+
+def main()
+  {
+    let a : item = { 5,"minecraft:diamond" }
+
+    #Вызов будет выглядеть так
+    a.rename("minecraft:emerald") # <-- Обратите внимание, что первый аргумент передавать не нужно.
+  }
+```
+
+Ну и давайте объединим получившиеся функции вывода
+
+```text
+
+namespace item
+
+inline print_int(i : $ int)
+{
+    raw tellraw @a { %i.0% : %:i.1%,nbt:%:i.2%,interpret:false }
+}
+
+
+inline print(str : $ string)
+{
+    raw tellraw @a { %str.0% : %:str.1%,nbt:%:str.2%,interpret:true }
+}
+
+storage item
+{
+  count : int
+  name : string
+
+  inline rename( self : $ item , str : $ string )
+  {
+    self.name = str
+  }
+
+  def make_1_copy( self : item , str : string ) -> item # <-- Функция делает копию но её count будет один.
+  {
+      return { 1,self.name }
+  }
+
+  inline print(self : $ item)
+  {
+      print("Имя предмета:")
+      print(self.name)
+      print("Количество")
+      print_int(self.count)
+  }
+}
+
+
+def main()
+  {
+    let a : item = { 5,"minecraft:diamond" }
+
+    a.print()
+    a.rename("minecraft:emerald") # <-- Обратите внимание, что первый аргумент передавать не нужно.
+    a.print()
+
+    a.count = 15
+    a.print()
+
+    let b = a.make_1_copy()
+    b.print()
+  }
+```
+
+При запуске функции видим.
+
+<img width="610" height="620" alt="image" src="https://github.com/user-attachments/assets/9056943e-44c5-457f-9ac9-4d93fd525dbb" />
+
+
