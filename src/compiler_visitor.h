@@ -48,6 +48,7 @@ public:
         void genStructMemberAccess(tree::Variable* node,Value& value,size_t& i);
         void genCallMemberAccess(tree::Call*mem, Value& value,size_t &i);
         void genSelectorMemberAccess(tree::RawSelector*mem, Value& value,size_t &i);
+        void genListMemberAccess(tree::Call* call, Value& value,size_t &i);
     void visit(tree::Objective*) override;
     void visit(tree::BoolLiteral*) override;
     void visit(tree::If*) override;

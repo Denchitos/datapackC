@@ -308,29 +308,9 @@ void CompilerVisitor::genCallMemberAccess(tree::Call* call, Value& value,size_t 
         call->accept(this);
         value = getTopOperand();
     }
-    else if ( value.type.isList() )
+    else if ( value.type.isList() ) 
     {
-        if ( call->getName() == "operator[]" )
-        {
-            auto len = call->call_args.size();
-            if ( len != 1 ) throw std::runtime_error(getRowCol(call) + " index access for builtin list has only one number literal argument, but got " + std::to_string(len) );
-
-            call->call_args[0]->accept(this);
-            auto val = getTopOperand();
-            if ( val.type != Type::numberLiteral ) throw std::runtime_error(getRowCol(call) + " index access for builtin list requires one number literal argument, but got " + fileCtx->typeToStr(val.type) );
-
-            value.value.back().append("[").append(std::to_string(std::stoi(val.to_string()))).append("]");
-            value.type = value.type.getListDown();
-        }
-        else if ( call->getName() == "len" )
-        {
-            auto len = call->call_args.size();
-            if ( len != 0 ) throw std::runtime_error(getRowCol(call) + " builtin member function len() hasn't any arguments, but got " + std::to_string(len) );
-            auto tmp = fileCtx->getTempScoreVar();
-            fileCtx->println( "execute store result score "+tmp[0] + " " + tmp[1] + " run data get " + value.to_string() );
-            value.value = tmp; value.type = Type::score;
-        }
-        else throw std::runtime_error(getRowCol(call) + " unknown member function '" + call->getName() + "' for builtin type " + fileCtx->typeToStr(value.type) );
+        genListMemberAccess(call,value,i);
     }
     else if ( value.type == Type::rawSelector || value.type == Type::selector )
     {
@@ -357,6 +337,96 @@ void CompilerVisitor::genCallMemberAccess(tree::Call* call, Value& value,size_t 
         }
         else throw std::runtime_error( getRowCol(call) +" Unknown member function '" + call->getName() +"'");
     }
+}
+
+void CompilerVisitor::genListMemberAccess(tree::Call* call, Value& value,size_t &i)
+{
+    if ( call->getName() == "operator[]" )
+    {
+        auto len = call->call_args.size();
+        if ( len != 1 ) throw std::runtime_error(getRowCol(call) + " index access for builtin list has only one number literal argument, but got " + std::to_string(len) );
+
+        call->call_args[0]->accept(this);
+        auto val = getTopOperand();
+        if ( val.type != Type::numberLiteral ) throw std::runtime_error(getRowCol(call) + " index access for builtin list requires one number literal argument, but got " + fileCtx->typeToStr(val.type) );
+
+        value.value.back().append("[").append(std::to_string(std::stoi(val.to_string()))).append("]");
+        value.type = value.type.getListDown();
+    }
+    else if ( call->getName() == "len" )
+    {
+        auto len = call->call_args.size();
+        if ( len != 0 ) throw std::runtime_error(getRowCol(call) + " list builtin member function len() hasn't any arguments, but got " + std::to_string(len) );
+        auto tmp = fileCtx->getTempScoreVar();
+        fileCtx->println( "execute store result score "+tmp[0] + " " + tmp[1] + " run data get " + value.to_string() );
+        value.value = tmp; value.type = Type::score;
+    }
+    else if ( call->getName() == "append" )
+    {
+        auto len = call->call_args.size();
+        if ( len != 1 ) throw std::runtime_error(getRowCol(call) + " list builtin member function append() has one argument, but got " + std::to_string(len) );
+
+        call->call_args[0]->accept(this);
+        auto item = getTopOperand();
+        auto expected_type = value.type.getListDown();
+        if ( item.type != expected_type )
+        {
+            try 
+            {
+                item = codeGen->cast(expected_type,item);
+            }
+            catch (std::exception& e)
+            {
+                throw std::runtime_error(getRowCol(call) + " list builtin member function prepend("+fileCtx->typeToStr(expected_type)+") got argument with type " + fileCtx->typeToStr(item.type)+"\n\t"+e.what());
+            }
+        }
+        fileCtx->println( "data modify "+value.to_string()+" append from "+ item.to_string() );
+    }
+    else if ( call->getName() == "prepend" )
+    {
+        auto len = call->call_args.size();
+        if ( len != 1 ) throw std::runtime_error(getRowCol(call) + " list builtin member function prepend() has one argument, but got " + std::to_string(len) );
+
+        call->call_args[0]->accept(this);
+        auto item = getTopOperand();
+        auto expected_type = value.type.getListDown();
+        if ( item.type != expected_type )
+        {
+            try 
+            {
+                item = codeGen->cast(expected_type,item);
+            }
+            catch (std::exception& e)
+            {
+                throw std::runtime_error(getRowCol(call) + " list builtin member function prepend("+fileCtx->typeToStr(expected_type)+") got argument with type " + fileCtx->typeToStr(item.type)+"\n\t"+e.what());
+            }
+        }
+        fileCtx->println( "data modify "+value.to_string()+" prepend from "+ item.to_string() );
+    }
+    else if ( call->getName() == "insert" )
+    {
+        auto len = call->call_args.size();
+        if ( len != 2 ) throw std::runtime_error(getRowCol(call) + " list builtin member function insert(numberLiteral,item) has two argument, but got " + std::to_string(len) );
+        call->call_args[0]->accept(this);
+        auto idx = getTopOperand();
+        if ( idx.type != Type::numberLiteral ) throw std::runtime_error(getRowCol(call) + " list builtin member function insert(numberLiteral,item): first argument must be a numberLiteral,but got " + fileCtx->typeToStr(idx.type) );
+        call->call_args[1]->accept(this);
+        auto item = getTopOperand();
+        auto expected_type = value.type.getListDown();
+        if ( item.type != expected_type )
+        {
+            try 
+            {
+                item = codeGen->cast(expected_type,item);
+            }
+            catch (std::exception& e)
+            {
+                throw std::runtime_error(getRowCol(call) + " list builtin member function insert(numberLiteral,"+fileCtx->typeToStr(expected_type)+") got second argument with type " + fileCtx->typeToStr(item.type)+"\n\t"+e.what());
+            }
+        }
+        fileCtx->println( "data modify "+value.to_string()+" insert "+idx.to_string()+" from "+ item.to_string() );
+    }
+    else throw std::runtime_error(getRowCol(call) + " unknown member function '" + call->getName() + "' for builtin type " + fileCtx->typeToStr(value.type) );
 }
 
 void CompilerVisitor::genSelectorMemberAccess(tree::RawSelector* call, Value& value,size_t &i)

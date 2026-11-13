@@ -159,7 +159,6 @@ std::vector<std::string> FileCompilationContext::nameMangle(const Type& type,con
     {
         return {"."+currentFunction().toDotPath()+'.'+name,"local"};
     }
-    
     if ( type.type==Type::int_t || type.type == Type::float_t || type.type == Type::bool_t || type.type == Type::string || type.type == Type::struct_t )
     {
         return { "storage",currentFunction().toMinecraftPath(),name };

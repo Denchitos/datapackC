@@ -1,6 +1,6 @@
 #пример
 
-namespace global:dp/text
+namespace global:dp
 
 objective dms
 
@@ -119,6 +119,29 @@ storage taq
 def testual()->int[]
 {
     return {1,2,3}
+}
+
+inline print_list(str : $ int[])
+{
+    raw tellraw @a { %str.0% : %:str.1%,nbt:%:str.2% }
+}
+
+def test_list()
+{
+    let intlist : int[] = { 5,4,3,2 }
+    print_list(intlist)
+    let len = intlist.len()
+    let item = intlist[0]
+    let a = 5
+    print("Ожидается ...,2,5")
+    intlist.append(item)
+    print_list(intlist)
+    print("Ожидается 5,5...")
+    intlist.prepend(5)
+    print_list(intlist)
+    print("Ожидается 5,5,97...")
+    intlist.insert(2,97)
+    print_list(intlist)
 }
 
 def func2()

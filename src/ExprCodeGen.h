@@ -2,6 +2,7 @@
 #include<memory>
 #include<string>
 #include<vector>
+class Type;
 class FileCompilationContext;
 class Value;
 
@@ -12,7 +13,7 @@ public:
     ExprCodeGen(std::shared_ptr<FileCompilationContext>);
     
     Value genAssign(const Value& lhs,const Value& rhs);
-
+    Value cast(const Type&,const Value& value);
     Value genAnd(const Value& lhs,const Value& rhs);
     Value genOr(const Value& lhs,const Value& rhs);
 

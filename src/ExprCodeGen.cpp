@@ -419,6 +419,21 @@ static std::unordered_map<std::pair<Type,Type>,operator_form> genAnd_map{
 
 GEN_OPERATOR(genAnd)
 
+Value ExprCodeGen::cast(const Type& type,const Value& value)
+{
+    auto name = fileCtx->getTempVar();
+    auto val = fileCtx->nameMangle(type,name);
+    Value lhs = {val,type};
+    try {
+        genAssign(lhs,value);
+        return lhs;
+    }
+    catch( std::exception&e )
+    {
+        throw std::runtime_error("Unable to cast " + fileCtx->typeToStr(value.type) + " to type " + fileCtx->typeToStr(type));
+    }
+}
+
 static std::unordered_map<std::pair<Type,Type>,operator_form> genOr_map{
     { {Type::boolLiteral,Type::boolLiteral},[](FileCompilationContext* fileCtx,const Value& lhs,const Value& rhs) -> Value
     {
