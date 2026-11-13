@@ -32,11 +32,9 @@ Value FuncDeclVisitor::declArg(tree::VarDecl* varDecl)
     Type type = fileCtx->strToType(varDecl->getVarType());
 
     auto name = varDecl->getVarName();
-
+    type.list_depth = varDecl->list_depth;
     auto val = fileCtx->nameMangle( type, name );
-
     bool is_link = varDecl->is_link;
-    
     Value value{ val,type,varDecl->getVarName() };
     value.is_link = is_link;
     return value;

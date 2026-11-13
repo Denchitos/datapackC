@@ -703,7 +703,15 @@ void CompilerVisitor::emitCallInlined(const std::vector<Value>& call_args,Inline
         auto& value = fd.args[i].second;
         auto& name = fd.args[i].first;
         if ( value.is_link ){
-            fileCtx->registerVar( name, { arg.value , arg.type } );
+            if ( arg.type == value.type )
+            {
+                fileCtx->registerVar( name, { arg.value , arg.type } );
+            }
+            else
+            {
+                auto tmp = codeGen->cast(value.type,arg);
+                fileCtx->registerVar( name, { tmp.value , tmp.type } );
+            }
         }
         else{
             codeGen->genAssign( value ,arg );
