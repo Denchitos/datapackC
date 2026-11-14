@@ -11,6 +11,9 @@ namespace tree
         void push(NodePtr&& node);
         
         void accept(Visitor*);
+
+        bool alwaysReturn = false;
+
     };
     using BlockPtr = std::unique_ptr<Block>;
 

@@ -79,9 +79,21 @@ FunctionDeclaration FuncDeclVisitor::makeFuncDecl(tree::Function* func)
 
 void FuncDeclVisitor::visit(tree::Function* func)
 {
-    auto func_decl = makeFuncDecl(func);
-    if ( !fileCtx->registerFunc(func->getName(),std::move(func_decl) ) )
-        throw std::runtime_error(getRowCol(func)+" Redifinition of callable name '"+func->getName()+"'");
+    try{
+        auto func_decl = makeFuncDecl(func);
+
+        if ( func_decl.ret.has_value() && !func->alwaysReturn )
+        {
+            throw std::runtime_error("Function '"+func->getName()+"' don't return always");
+        }
+
+        if (!fileCtx->registerFunc(func->getName(),std::move(func_decl) ))
+            throw std::runtime_error("Redifinition of callable name '"+func->getName()+"'");
+    }
+    catch(std::exception& e)
+    {
+        throw std::runtime_error(getRowCol(func) + " " + e.what());
+    }
 }
 
 InlinedFunctionDeclaration FuncDeclVisitor::makeInlinedFuncDecl(tree::InlinedFunction* func)

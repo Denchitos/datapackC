@@ -70,9 +70,9 @@ def no_func(a : score) -> score
     {
         return 50
     }
-    else return 25
+    else raw say 5
 
-    return 10
+    return a
 }
 
 storage custom 

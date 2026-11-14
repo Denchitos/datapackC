@@ -16,12 +16,15 @@ struct Function : public Node
     std::vector<VarDeclPtr> args;
     
     std::optional<std::pair<std::string,size_t>> ret_type = std::nullopt;
-
+    
+    bool alwaysReturn = false;  
+    
     void pushArg(VarDeclPtr&&);
     
     void accept(Visitor*);
 
     virtual ~Function() = default;
+
 };
 
 using FunctionPtr = std::unique_ptr<Function>;

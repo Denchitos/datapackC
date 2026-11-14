@@ -1,3 +1,4 @@
+#pragma once
 #include"visitor.h"
 
 class EmptyVisitor : public Visitor

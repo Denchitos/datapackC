@@ -2,25 +2,31 @@
 #include<iostream>
 #include<iomanip>
 #include<string>
+#include<filesystem>
+#include<memory>
 #include"lexer.h"
 #include"parser.h"
 //#include"print_visitor.h"
 #include"compiler_visitor.h"
 #include"declaration_visitor.h"
-#include<filesystem>
-#include<memory>
-
+#include"return_checker.h"
 namespace fs = std::filesystem;
 
 void compile(std::vector<tree::NodePtr>& v)
 {
+    auto ret_checker = std::make_unique<ReturnChecker>();
+    
+    for ( auto& it : v )
+    {
+            it->accept(ret_checker.get());
+    }
 
     auto ctx = std::make_shared<FileCompilationContext>();
     
     auto codeG = std::make_shared<ExprCodeGen>(ctx);
 
     auto store_decl = std::make_unique<StorageDeclVisitor>(ctx);
-    
+
     std::cout<<"Declaration...\n";
 
     try {

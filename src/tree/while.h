@@ -6,8 +6,8 @@ struct While : public Node
 {
     NodePtr expr;
     NodePtr body;
-    bool isBreakable = true;
-    
+    bool isBreakable : 1 = true;
+    bool alwaysReturn : 1 = false;   
     While(const Token& tok);
     void accept(Visitor* v);
 };
