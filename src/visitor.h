@@ -33,6 +33,7 @@ namespace tree
     class InitList;
     class IndexAccess;
     class InlinedFunction;
+    class ExprNode;
 }
 
 class Visitor

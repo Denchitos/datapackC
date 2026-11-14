@@ -10,6 +10,7 @@
 #include"compiler_visitor.h"
 #include"declaration_visitor.h"
 #include"return_checker.h"
+#include"call_tree_builder.h"
 namespace fs = std::filesystem;
 
 void compile(std::vector<tree::NodePtr>& v)
@@ -18,7 +19,7 @@ void compile(std::vector<tree::NodePtr>& v)
     
     for ( auto& it : v )
     {
-            it->accept(ret_checker.get());
+        it->accept(ret_checker.get());
     }
 
     auto ctx = std::make_shared<FileCompilationContext>();
@@ -26,8 +27,6 @@ void compile(std::vector<tree::NodePtr>& v)
     auto codeG = std::make_shared<ExprCodeGen>(ctx);
 
     auto store_decl = std::make_unique<StorageDeclVisitor>(ctx);
-
-    std::cout<<"Declaration...\n";
 
     try {
         for ( auto& it : v )
@@ -37,9 +36,12 @@ void compile(std::vector<tree::NodePtr>& v)
     }
     catch ( std::exception& e )
     {
-        std::cout<<"[ERROR] "<<e.what()<<"\n";
+        std::cout<<"[Declarations] "<<e.what()<<"\n";
         return;
     }
+
+    std::cout<<"Declaration...\n";
+
 
     auto declarator = std::make_unique<FuncDeclVisitor>(ctx);
 
@@ -51,7 +53,23 @@ void compile(std::vector<tree::NodePtr>& v)
     }
     catch ( std::exception& e )
     {
-        std::cout<<"[ERROR] "<<e.what()<<"\n";
+        std::cout<<"[Definer] "<<e.what()<<"\n";
+        return;
+    }
+
+    std::cout<<"Build call tree...\n";
+
+    auto tree_builder = std::make_unique<CallTreeBuilder>(ctx);
+
+    try {
+        for ( auto& it : v )
+        {
+            it->accept(tree_builder.get());
+        }
+    }
+    catch ( std::exception& e )
+    {
+        std::cout<<"[TreeBuilder] "<<e.what()<<"\n";
         return;
     }
 

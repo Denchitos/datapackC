@@ -23,6 +23,10 @@ TREE_BEGIN
         virtual void accept(Visitor*);
 
         virtual ~Node(){};
+
+        std::string getRowCol() const {
+            return "[ " + std::to_string(col) + " , " + std::to_string(row) + " ]";
+        }
     };
     using NodePtr = std::unique_ptr<Node>;
 TREE_END
