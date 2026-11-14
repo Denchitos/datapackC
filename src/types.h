@@ -3,14 +3,23 @@
 #include<string>
 #include<optional>
 #include <iostream>
+
 struct Type;
+struct OperationTriplet;
 
 namespace std {
-template<>
-struct hash<Type> {
-    std::size_t operator()(const Type& t) const;
-};
+    template<>
+    struct hash<Type> {
+        std::size_t operator()(const Type& t) const;
+    };
+
+    template<>
+    struct hash<OperationTriplet> {
+        std::size_t operator()(const OperationTriplet& t) const;
+    };
 }
+
+
 
 struct Type
 {
@@ -36,6 +45,8 @@ struct Type
     
     static std::optional<std::string> toStr(const Type& t);
     
+    static std::unordered_map<OperationTriplet,Type> builtin_operation_table;
+
     bool operator==(const Type&t) const
     {
         return type == t.type && struct_id == t.struct_id && list_depth == t.list_depth ;
@@ -66,15 +77,27 @@ private:
 
 };
 
-namespace std {
-template<>
-struct hash<std::pair<Type,Type>>
+struct OperationTriplet
 {
-    std::size_t operator()(const std::pair<Type,Type>& t) const
+    std::string op;
+    Type left;
+    Type right;
+
+    bool operator==(const OperationTriplet& t) const
     {
-        std::size_t h1 = std::hash<Type>{}(t.first);
-        std::size_t h2 = std::hash<Type>{}(t.second);
-        return  h2^(h1>>1)^(h2<<6);
+        return op==t.op && left == t.left && right == t.right;
     }
 };
+
+namespace std {
+    template<>
+    struct hash<std::pair<Type,Type>>
+    {
+        std::size_t operator()(const std::pair<Type,Type>& t) const
+        {
+            std::size_t h1 = std::hash<Type>{}(t.first);
+            std::size_t h2 = std::hash<Type>{}(t.second);
+            return  h2^(h1>>1)^(h2<<6);
+        }
+    };
 }

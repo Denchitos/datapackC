@@ -71,3 +71,98 @@ std::optional<std::string> Type::toStr(const Type& t)
     }
     return res;
 }
+
+std::size_t std::hash<OperationTriplet>::operator()(const OperationTriplet& opt) const
+{
+    std::size_t hop = std::hash<std::string>{}(opt.op);
+    std::size_t h1 = std::hash<Type>{}(opt.right);
+    std::size_t h2 = std::hash<Type>{}(opt.left);
+    auto h_ops = h2^(h1>>1)^(h2<<6);
+    return (hop<<2)^(h_ops<<4);
+}
+
+std::unordered_map<OperationTriplet,Type> Type::builtin_operation_table
+{
+    {{"+",Type::score,Type::score},Type::score},
+    {{"-",Type::score,Type::score},Type::score},
+    {{"*",Type::score,Type::score},Type::score},
+    {{"/",Type::score,Type::score},Type::score},
+    {{"%",Type::score,Type::score},Type::score},
+    {{"=",Type::score,Type::score},Type::score},
+    
+    {{"+=",Type::score,Type::score},Type::score},
+    {{"-=",Type::score,Type::score},Type::score},
+    {{"*=",Type::score,Type::score},Type::score},
+    {{"/=",Type::score,Type::score},Type::score},
+    {{"%=",Type::score,Type::score},Type::score},
+
+    {{">",Type::score,Type::score},Type::score_bool},
+    {{"<",Type::score,Type::score},Type::score_bool},
+    {{">=",Type::score,Type::score},Type::score_bool},
+    {{"<=",Type::score,Type::score},Type::score_bool},
+    {{"==",Type::score,Type::score},Type::score_bool},
+
+    {{"+",Type::score,Type::numberLiteral},Type::score},
+    {{"-",Type::score,Type::numberLiteral},Type::score},
+    {{"*",Type::score,Type::numberLiteral},Type::score},
+    {{"/",Type::score,Type::numberLiteral},Type::score},
+    {{"%",Type::score,Type::numberLiteral},Type::score},
+    {{"=",Type::score,Type::numberLiteral},Type::score},
+    
+    {{"+=",Type::score,Type::numberLiteral},Type::score},
+    {{"-=",Type::score,Type::numberLiteral},Type::score},
+    {{"*=",Type::score,Type::numberLiteral},Type::score},
+    {{"/=",Type::score,Type::numberLiteral},Type::score},
+    {{"%=",Type::score,Type::numberLiteral},Type::score},
+
+
+    {{">", Type::score,Type::numberLiteral},Type::score_bool},
+    {{"<", Type::score,Type::numberLiteral},Type::score_bool},
+    {{">=",Type::score,Type::numberLiteral},Type::score_bool},
+    {{"<=",Type::score,Type::numberLiteral},Type::score_bool},
+    {{"==",Type::score,Type::numberLiteral},Type::score_bool},
+
+    {{"+",Type::numberLiteral,Type::score},Type::score},
+    {{"-",Type::numberLiteral,Type::score},Type::score},
+    {{"*",Type::numberLiteral,Type::score},Type::score},
+    {{"/",Type::numberLiteral,Type::score},Type::score},
+    {{"%",Type::numberLiteral,Type::score},Type::score},
+
+    {{">", Type::numberLiteral,Type::score},Type::score_bool},
+    {{"<", Type::numberLiteral,Type::score},Type::score_bool},
+    {{">=",Type::numberLiteral,Type::score},Type::score_bool},
+    {{">=",Type::numberLiteral,Type::score},Type::score_bool},
+    {{"==",Type::numberLiteral,Type::score},Type::score_bool},
+
+    {{">", Type::numberLiteral,Type::numberLiteral},Type::score_bool},
+    {{"<", Type::numberLiteral,Type::numberLiteral},Type::score_bool},
+    {{">=",Type::numberLiteral,Type::numberLiteral},Type::score_bool},
+    {{"<=",Type::numberLiteral,Type::numberLiteral},Type::score_bool},
+    {{"==",Type::numberLiteral,Type::numberLiteral},Type::score_bool},
+
+    {{"+",Type::numberLiteral,Type::numberLiteral},Type::numberLiteral},
+    {{"-",Type::numberLiteral,Type::numberLiteral},Type::numberLiteral},
+    {{"*",Type::numberLiteral,Type::numberLiteral},Type::numberLiteral},
+    {{"/",Type::numberLiteral,Type::numberLiteral},Type::numberLiteral},
+    {{"%",Type::numberLiteral,Type::numberLiteral},Type::numberLiteral},
+
+    {{"&&",Type::score_bool,Type::score_bool},Type::score_bool},
+    {{"||",Type::score_bool,Type::score_bool},Type::score_bool},
+    {{"=", Type::score_bool,Type::score_bool},Type::score_bool},
+
+    {{"&&",Type::score_bool,Type::boolLiteral},Type::score_bool},
+    {{"||",Type::score_bool,Type::boolLiteral},Type::score_bool},
+    {{"=", Type::score_bool,Type::boolLiteral},Type::score_bool},
+
+    {{"&&",Type::boolLiteral,Type::score},Type::score_bool},
+    {{"||",Type::boolLiteral,Type::score},Type::score_bool},
+
+    {{"&&",Type::boolLiteral,Type::boolLiteral},Type::boolLiteral},
+    {{"||",Type::boolLiteral,Type::boolLiteral},Type::boolLiteral},
+
+    {{"=",Type::string,Type::textLiteral},Type::string},
+    {{"=",Type::string,Type::string},Type::string},
+    
+    {{"=",Type::int_t,Type::numberLiteral},Type::int_t},
+    {{"=",Type::int_t,Type::int_t},Type::int_t},
+};

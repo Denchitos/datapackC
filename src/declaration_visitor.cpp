@@ -58,6 +58,9 @@ FunctionDeclaration FuncDeclVisitor::makeFuncDecl(tree::Function* func)
         if ( arg != nullptr ){ 
             auto argument = declArg(arg.get());
             if (argument.is_link) throw std::runtime_error( getRowCol(func)+" Macro arguments aren't implemented yet" );
+            
+            if (argument.type == Type::selector && !argument.is_link ) throw std::runtime_error ( getRowCol(func) + " Selector can't be a non-macro-argument in 'def-functuons'"  );
+
             func_decl.args.emplace_back(argument);
         }
     }

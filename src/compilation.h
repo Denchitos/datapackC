@@ -377,4 +377,17 @@ std::unordered_set<std::string> initialized_structs;
 
     void println(const std::string&);
     void println(std::string&&);
+
+    bool hasOperation(const std::string& op,const Type& t1,const Type& t2)
+    {
+        auto it = Type::builtin_operation_table.find({op,t1,t2});
+        return it != Type::builtin_operation_table.end();
+    }
+
+    Type getOperationResult(const std::string& op,const Type& t1,const Type& t2)
+    {
+        auto it = Type::builtin_operation_table.find({op,t1,t2});
+        if ( it == Type::builtin_operation_table.end() ) throw std::runtime_error("Unexpected Operation Triplet - ["+typeToStr(t1) + op + typeToStr(t2) +"]");        
+        return it->second;
+    }
 };
