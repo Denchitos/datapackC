@@ -62,4 +62,6 @@ public:
         }
         throw std::runtime_error("Unknown Symbol [" + s + "]");
     }
+
+    std::vector<std::string> findRecursion();
 };

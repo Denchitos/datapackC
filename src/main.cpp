@@ -73,6 +73,21 @@ void compile(std::vector<tree::NodePtr>& v)
         return;
     }
 
+    auto rec = tree_builder->findRecursion();
+
+    if ( rec.size() != 0 )
+    {
+        std::cout<<"Recursion detected!\nCompilation aborted\n";
+
+        for ( auto& it : rec )
+        {
+            std::cout<<it<<"\n";
+        }
+        return;
+    }
+
+    std::cout<<"No Recursion detected";
+
     auto visite =  std::make_unique<CompilerVisitor>(ctx,codeG); 
     
     std::cout<<"Compilation...\n";

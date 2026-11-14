@@ -1,3 +1,5 @@
+#include<functional>
+
 #include "call_tree_builder.h"
 
 #include"tree/vardecl.h"
@@ -312,4 +314,57 @@ void CallTreeBuilder::visit(tree::ScheduledWhile* while_){
     if ( while_->then ) while_->then->accept(this);
 
     vars.pop();
+}
+
+
+std::vector<std::string> CallTreeBuilder::findRecursion()
+{
+    constexpr char GRAY = 0;
+    constexpr char BLACK = 1;
+    
+    std::vector<std::string> res;
+    std::unordered_map<std::string,char> colors;
+
+    std::function<bool(const std::string&,std::vector<std::string>&path)> dfs = [&res,&dfs,this,&colors](const std::string& current,std::vector<std::string>& path) -> bool
+    {
+        colors[current] = GRAY;
+
+        path.emplace_back(current);
+
+        for ( auto& child : graph[current] )
+        {
+            if ( !colors.contains(child) )
+            {
+                return dfs(child,path);
+            }
+            else if ( colors[child] == GRAY )
+            {
+                std::string pathstr;
+                for ( auto & it : path )
+                {
+                    pathstr.append(it).append(" -> ");
+                }
+                pathstr.append(child);
+                res.emplace_back(std::move(pathstr));
+                return false;
+            }
+        }
+        colors[current] = BLACK;
+        return "";
+    };
+
+
+    for ( auto& [root,_] : graph )
+    {
+        if ( colors.contains(root) )
+        {
+            continue;
+        }
+
+        std::vector<std::string> path;
+        dfs(root,path);
+    }
+
+    return res;
+
 }

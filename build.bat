@@ -13,7 +13,7 @@ del "%output%"
 echo Сборка...
 
 cd src
-g++ %src_code% -o "../%output%" -g -O0 -std=c++23 -Wall -Wextra -Werror -Wuseless-cast -Wno-unused-parameter -static-libgcc -static-libstdc++
+g++ %src_code% -g -O0 -o "../%output%" -std=c++23 -Wall -Wextra -Werror -Wuseless-cast -Wno-unused-parameter -static-libgcc -static-libstdc++
 cd ..
 
 echo Сборка завершена
