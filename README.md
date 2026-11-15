@@ -1,6 +1,35 @@
 # DatapackC
 Компилятор с собственного DSL в .mcfunction для создания датапаков *Minecraft*
 
+---
+
+### Сборка Проекта
+
+Убедитесь что у вас установлены:
+
+- **CMake** ( версия 3.20 и выше )
+- **Компилятор C++** (GCC/MinGW, Clang или MSVC - я использовал GCC/MinGW)
+
+---
+
+*Примечание: Проект тестировался с компилятором GCC (TDM-GCC 16.2.0) и генератором Ninja.*
+
+```text
+    git clone https://github.com/Denchitos/datapackC
+    cd datapackC
+    cmake -S . -B build
+    cmake --build build
+```
+
+и запустите
+
+```text
+    ./datapackC <file>
+```
+
+
+---
+
 ## Структура программы
 
 Код для datapackC делится на следующие секции

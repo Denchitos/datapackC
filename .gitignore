@@ -1,2 +1,5 @@
 datapack/
 /text.test
+/TaskList.txt
+build/
+/build.bat

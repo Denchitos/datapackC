@@ -19,65 +19,6 @@
 #include"tree/return.h"
 #include"types.h"
 
-std::string CompilerVisitor::generateDefaultNbt(const Type& type)
-{
-    if (type.list_depth > 0) {
-        return "[]"; // Для списков любого уровня вложенности
-    }
-    
-    switch (type.type) {
-        case Type::int_t:
-        case Type::score:
-            return "0";
-        case Type::float_t:
-            return "0.0d";
-        case Type::bool_t:
-        case Type::score_bool:
-            return "0b";
-        case Type::string:
-            return "\"\"";
-        case Type::struct_t: {
-            const auto& storage = fileCtx->getStorageDecl(type);
-            std::string result = "{";
-            for (size_t i = 0; i < storage.field_names.size(); ++i) {
-                if (i > 0) result += ",";
-                const auto& field_name = storage.field_names[i];
-                const auto& field_type = storage.fields.at(field_name);
-                result += field_name + ":" + generateDefaultNbt(field_type);
-            }
-            result += "}";
-            return result;
-        }
-        default:
-            return "{}"; // fallback
-    }
-}
-
-void CompilerVisitor::ensureVarInitialized(const Value& lhs)
-{
-    // Инициализируем скелет только для структур и списков (у них есть вложенные пути)
-    if (lhs.type.type != Type::struct_t && lhs.type.list_depth == 0) return;
-    
-    // Проверяем, что переменная лежит в storage (а не в scoreboard)
-    if (lhs.value.size() < 3 || lhs.value[0] != "storage") return;
-
-    std::string path = lhs.to_string();
-    
-    // Если уже инициализировали этот путь в load, пропускаем
-    if (fileCtx->initialized_structs.contains(path)) return;
-    fileCtx->initialized_structs.insert(path);
-    
-    std::string nbt = generateDefaultNbt(lhs.type);
-    
-    // lhs.value[1] — это имя storage (например, "global:dp/func2")
-    // lhs.value[2] — это имя переменной (например, "aboba")
-    std::string storage_id = lhs.value[1];
-    std::string var_name = lhs.value[2];
-
-    // Генерируем: data merge storage global:dp/func2 {aboba:{list:[]}}
-    fileCtx->printToLoad("data merge storage " + storage_id + " {" + var_name + ":" + nbt + "}");
-}
-
 CompilerVisitor::CompilerVisitor(std::shared_ptr<FileCompilationContext> ctx,std::shared_ptr<ExprCodeGen> codeG) : fileCtx(ctx),codeGen(codeG)
 {
 

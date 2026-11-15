@@ -115,7 +115,6 @@ struct FunctionDeclaration
 
     FunctionDeclaration() = default;
     FunctionDeclaration(const std::string& m_name) : minecraft_name(m_name) {}
-    FunctionDeclaration(const std::string& m_name,std::vector<Value>&& args) : minecraft_name(m_name) {}
 };
 
 struct InlinedFunctionDeclaration
@@ -125,7 +124,6 @@ struct InlinedFunctionDeclaration
     tree::Block* body;
     InlinedFunctionDeclaration() = default;
     InlinedFunctionDeclaration(const std::string& m_name) : minecraft_name(m_name) {}
-    InlinedFunctionDeclaration(const std::string& m_name,std::vector<Value>&& args) : minecraft_name(m_name) {}
 };
 
 struct StorageDeclaration

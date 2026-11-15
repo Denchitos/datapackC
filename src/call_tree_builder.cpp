@@ -335,7 +335,8 @@ std::vector<std::string> CallTreeBuilder::findRecursion()
         {
             if ( !colors.contains(child) )
             {
-                return dfs(child,path);
+                if (dfs(child,path))
+                    continue;
             }
             else if ( colors[child] == GRAY )
             {
@@ -350,7 +351,7 @@ std::vector<std::string> CallTreeBuilder::findRecursion()
             }
         }
         colors[current] = BLACK;
-        return "";
+        return true;
     };
 
 

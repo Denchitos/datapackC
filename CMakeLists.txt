@@ -8,3 +8,4 @@ file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS
 )
 
 add_executable(dpcompiler ${APP_SOURCES})
+target_link_options(dpcompiler PRIVATE -static)

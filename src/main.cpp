@@ -155,6 +155,13 @@ int main(int argc,char** argv)
 
     std::string file_name(argv[1]);
     std::ifstream file(file_name);
+
+    if ( !file.is_open())
+    {
+        std::cerr<<"Файл "<<file_name<<" Не найден";
+        return 2;
+    }
+
     std::string line;
     std::string text;
     while ( std::getline(file,line) )
