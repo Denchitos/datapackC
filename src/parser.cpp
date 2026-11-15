@@ -52,6 +52,37 @@ tree::NodePtr Parser::parseObjective()
     return obj;
 }
 
+std::string Parser::parseName()
+{   
+    std::string name;
+    if ( match(Token::Word) )
+    {
+        name = look(-1).tok;
+    }
+    if ( !match(Token::Colon) ) return name;
+
+    name.append(":");
+    
+    if ( !expect(Token::Word,"Afeter ':' in names must be a word") )
+    {
+        statementPanic();
+        return name;
+    }
+
+    name.append(look(-1).tok);
+
+    while ( match(Token{"/",Token::Operator}) )
+    {
+        if ( !expect(Token::Word,"Afeter '/' in names must be a word") )
+        {
+            statementPanic();
+            return name;
+        }
+        name.append("/").append(look(-1).tok);
+    }
+    return name;
+}
+
 tree::NodePtr Parser::parseNamespace()
 {
     if (!expect(Token{"namespace",Token::Word},"Expected 'namespace' in namespace defining") ){ statementPanic() ;return nullptr;}
@@ -276,7 +307,6 @@ tree::ExprNodePtr Parser::parseCall()
         statementPanic();
         return nullptr;   
     }
-    auto name = look(-1).tok;
     auto call_name_id = current() - 1;
 
     if ( !expect(Token::OParen,"Function call is <function>(<args>...) , expected '('") )
@@ -286,7 +316,7 @@ tree::ExprNodePtr Parser::parseCall()
     }
 
     auto call = std::make_unique<tree::Call>(look(call_name_id - current()));
-
+    
     if ( !compare(Token::CParen) )
     {
         while ( true )
@@ -577,8 +607,7 @@ Parser::VarSignature Parser::parseVarSignature()
         }
         else if ( !type.has_value() )
         {
-            type = word;
-            next();
+            type = parseName();
             while ( match(Token::OBracket) )
             {
                 if ( match(Token::CBracket) )
@@ -704,9 +733,23 @@ std::unique_ptr<tree::ExprNode> Parser::parsePrimaryTerm()
         return a;
     }
     else if (compare(Token::OBrace)) return parseInitList();
-    else if ( compare(Token::Word) && compare(Token::OParen,1) ) return parseCall();
     else if ( compare(Token::Word) )
-        { next() ; return std::make_unique<tree::Variable>(look(-1));}
+    {
+        auto i = current();
+        auto name = parseName();
+        if ( compare(Token::OParen) )
+        {
+            next(-1);
+            auto call = parseCall();
+            call->token = name;
+            return call;
+        }
+        else{
+            auto var = std::make_unique<tree::Variable>(look(current()-i));
+            var->token = name;
+            return var;
+        }
+    }
     else
     {
         error("Something wrong when parse Primary Term");

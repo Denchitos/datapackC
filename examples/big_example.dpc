@@ -1,6 +1,25 @@
 #пример
 
+namespace global:test
+
+storage my_struct
+{
+    a : int
+    b : int
+}
+
+def nig()
+{
+    raw say 10
+}
+
 namespace global:dp
+
+def aboba()
+{
+    let ms : global:test/my_struct = {15,15}
+    global:test/nig()
+}
 
 objective dms
 

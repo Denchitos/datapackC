@@ -13,6 +13,7 @@ static std::string getRowCol( tree::Node* node )
 void StorageDeclVisitor::visit(tree::Namespace* nmsp)
 {
     fileCtx->currentNamespace = { nmsp->namespace_,nmsp->path };
+    fileCtx->currentDefinedNamespace = { nmsp->namespace_,nmsp->path };
 }
 
 void StorageDeclVisitor::visit(tree::StorageDecl* storage_decl)
@@ -43,6 +44,7 @@ Value FuncDeclVisitor::declArg(tree::VarDecl* varDecl)
 void FuncDeclVisitor::visit(tree::Namespace* nmsp)
 {
     fileCtx->currentNamespace = { nmsp->namespace_,nmsp->path };
+    fileCtx->currentDefinedNamespace = { nmsp->namespace_,nmsp->path };
 }
 
 FunctionDeclaration FuncDeclVisitor::makeFuncDecl(tree::Function* func)

@@ -37,6 +37,8 @@ public:
     bool varDeclPanic();
     std::vector<tree::NodePtr> parse();
 
+    std::string parseName();
+    
     tree::NodePtr parseObjective();
     tree::NodePtr parseNamespace();
     tree::FunctionPtr parseFunction( bool can_have_return ); 

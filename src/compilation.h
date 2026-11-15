@@ -166,6 +166,7 @@ std::unordered_set<std::string> initialized_structs;
     IterableStack<std::unordered_map<std::string,Symbol>> symbols;
     IterableStack<std::string> while_break_stack;
     size_t tempVarNumber = 0;
+    Namespace currentDefinedNamespace = {"minecraft"};
     Namespace currentNamespace = {"minecraft"};
 
     FileCompilationContext();
@@ -195,13 +196,35 @@ std::unordered_set<std::string> initialized_structs;
         tick_file->println(line);
     }
 
-    bool hasType(const std::string& type)
+    bool isBadName(const std::string& name)
     {
+        if ( name.contains(":") ) return false;
+        return true;
+    }
+
+    bool hasType(const std::string& name)
+    {
+        auto type = resolveTypeName(name);
         return Type::hasType(type) || declared_types.contains(type);
     }
 
-    bool registerType(const std::string& type)
+    std::string resolveName(const std::string& name) const
     {
+        if ( !name.contains(":") ) return currentDefinedNamespace.toMinecraftPath()+name;
+        return name;
+    }
+
+    std::string resolveTypeName(const std::string& name) const
+    {
+        if ( Type::hasType(name) ) return name;
+        if ( !name.contains(":") ) return currentDefinedNamespace.toMinecraftPath()+name;
+        return name;
+    }
+
+    bool registerType(const std::string& name)
+    {
+        auto type = resolveTypeName(name);
+
         if ( hasType(type) ) return false;
         
         auto struct_id = types_counter++;
@@ -212,8 +235,11 @@ std::unordered_set<std::string> initialized_structs;
         declared_types.emplace(type);
         return true;
     }
-    Type strNotListToType(const std::string& type)
-    { 
+    
+    Type strNotListToType(const std::string& name)
+    {
+        auto type = resolveTypeName(name);
+
         if ( Type::hasType(type) ) return Type::StrToType(type).value();
         
         auto it = str_to_type.find(type);
@@ -223,8 +249,10 @@ std::unordered_set<std::string> initialized_structs;
         throw std::runtime_error("Couldn't converse string '"+ type + "' to Type");
     }
 
-    Type strToType(const std::string& s)
+    Type strToType(const std::string& name)
     {
+        auto s = resolveTypeName(name);
+
         if ( !s.contains('[') ) return strNotListToType(s);
 
         auto p = s.find('[');
@@ -291,58 +319,70 @@ std::unordered_set<std::string> initialized_structs;
     }
     void registerVar(const std::string&,const Symbol&);
 
-    bool registerFunc(const std::string& name,FunctionDeclaration&& funcDecl)
+    bool registerFunc(const std::string& func_name,FunctionDeclaration&& funcDecl)
     {
+        auto name = resolveName(func_name);
         if ( declared_inlined_functions.contains(name) || declared_functions.contains(name) ) return false;
         declared_functions[name] = std::move(funcDecl);
         return true;
     }
-    bool hasFunc(const std::string& name) const
+    bool hasFunc(const std::string& func_name) const
     {
+        auto name = resolveName(func_name);
         return declared_functions.contains(name);
     }
-    FunctionDeclaration& getFuncDecl(const std::string& name)
+    FunctionDeclaration& getFuncDecl(const std::string& func_name)
     {
+        auto name = resolveName(func_name);
         return declared_functions.at(name);
     }
 
-    bool registerInlined(const std::string& name,InlinedFunctionDeclaration&& funcDecl)
+    bool registerInlined(const std::string& func_name,InlinedFunctionDeclaration&& funcDecl)
     {
+        auto name = resolveName(func_name);
         if ( declared_inlined_functions.contains(name) || declared_functions.contains(name) ) return false;
         declared_inlined_functions[name] = std::move(funcDecl);
         return true;
     }
-    bool hasInlined(const std::string& name) const
+    bool hasInlined(const std::string& func_name) const
     {
+        auto name = resolveName(func_name);
         return declared_inlined_functions.contains(name);
     }
 
-    InlinedFunctionDeclaration& getInlinedDecl(const std::string& name)
+    InlinedFunctionDeclaration& getInlinedDecl(const std::string& func_name)
     {
+        auto name = resolveName(func_name);
         return declared_inlined_functions.at(name);
     }
 
-    bool registerObjective(const std::string& name)
+    bool registerObjective(const std::string& obj_name)
     {
+        std::cout<<"registered objective:\n";
+        auto name = resolveName(obj_name);
+        std::cout<<name<<"\n";
         if ( registered_objectives.contains(name) ) return false;
-        registered_objectives[name] = currentNamespace.toDotPath()+'.'+name;
+        registered_objectives[name] = currentNamespace.toDotPath()+'.'+obj_name;
         return true;
     }
 
-    bool hasObjective(const std::string& name)
+    bool hasObjective(const std::string& obj_name)
     {
+        auto name = resolveName(obj_name);
         return registered_objectives.contains(name);
     }
 
-    bool registerStorage(const std::string& name,StorageDeclaration&& storageDecl)
+    bool registerStorage(const std::string& stor_name,StorageDeclaration&& storageDecl)
     {
+        auto name = resolveTypeName(stor_name);
         if ( declared_functions.contains(name) ) return false;
         declared_storages[name] = std::move(storageDecl);
         return true;
     }
 
-    const std::string& getObjective(const std::string& name)
+    const std::string& getObjective(const std::string& obj_name)
     {
+        auto name = resolveTypeName(obj_name);
         auto it = registered_objectives.find(name);
         if ( it == registered_objectives.end() ) throw std::runtime_error("Unknown objective '"+name+"'");
         return it->second;
@@ -351,22 +391,24 @@ std::unordered_set<std::string> initialized_structs;
 
     bool hasStorage(const std::string& name) const
     {
-        return declared_storages.contains(name);
+        return declared_storages.contains(resolveTypeName(name));
     }
     bool hasStorage(const Type& type)
     {
-        auto name = typeToStr(type);
+        auto name = resolveTypeName(typeToStr(type));
         return declared_storages.contains(name);
     }
 
-    StorageDeclaration& getStorageDecl(const std::string& name)
+    StorageDeclaration& getStorageDecl(const std::string& stor_name)
     {
+        auto name = resolveTypeName(stor_name);
         if ( declared_storages.contains(name) ) return declared_storages.at(name);
         else throw std::runtime_error("Unknown string "+ name + " while trying to converse it to StorageDecl ");
     }
+    
     StorageDeclaration& getStorageDecl(const Type& type)
     {
-        auto name = typeToStr(type);
+        auto name = resolveTypeName(typeToStr(type));
         return getStorageDecl(name);
     }
 

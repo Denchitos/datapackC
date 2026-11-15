@@ -14,8 +14,8 @@ TREE_BEGIN
     class Node
     {
         size_t col,row;
-        std::string token;
     public:
+        std::string token;
         Node(const Token& tok);
         const std::string& getName() const {return token;}
         const size_t& getColumn() const {return col;}
@@ -25,7 +25,7 @@ TREE_BEGIN
         virtual ~Node(){};
 
         std::string getRowCol() const {
-            return "[ " + std::to_string(col) + " , " + std::to_string(row) + " ]";
+            return "[ " + std::to_string(row) + " , " + std::to_string(col) + " ]";
         }
     };
     using NodePtr = std::unique_ptr<Node>;

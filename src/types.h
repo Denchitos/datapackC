@@ -62,11 +62,13 @@ struct Type
         --t2.list_depth;
         return t2;
     } 
+    
     static bool hasType(const std::string& type )
     {
         if ( type.contains('[') ) return str_to_kind.contains(type.substr(0,type.find('[')));
         return str_to_kind.contains(type);
     }
+
     static bool isBuiltinType(const Type& type )
     {
         return type_to_str.contains(type);

@@ -27,6 +27,8 @@ public:
 
     CallTreeBuilder(std::shared_ptr<FileCompilationContext> fileCtx): fileCtx(fileCtx){}
 
+    void visit(tree::Namespace* nmsp);
+
     void visit(tree::Function*);
     void visit(tree::InlinedFunction*);
     

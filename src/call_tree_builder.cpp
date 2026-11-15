@@ -1,21 +1,22 @@
 #include<functional>
 
 #include "call_tree_builder.h"
-
 #include"tree/vardecl.h"
-
 #include"tree/expr.h"
-
 #include"tree/member_access.h"
-
 #include"tree/call.h"
-
 #include"tree/function.h"
-
+#include "tree/namespace.h"
 #include"tree/block.h"
 #include"tree/while.h"
 #include"tree/if.h"
 #include"tree/raw_selector.h"
+
+void CallTreeBuilder::visit(tree::Namespace* nmsp)
+{
+    fileCtx->currentNamespace = { nmsp->namespace_,nmsp->path };
+    fileCtx->currentDefinedNamespace = { nmsp->namespace_,nmsp->path };
+}
 
 Type CallTreeBuilder::typeInferrence(const Type& rhs)
 {
@@ -139,7 +140,7 @@ void CallTreeBuilder::memAccessStruct(tree::Variable* var,Type& current_type,siz
         auto& field = var->getName();
         i++;
         if ( Type::isBuiltinType(current_type) ) throw std::runtime_error(  var->getRowCol() + " Builtin type " + fileCtx->typeToStr(current_type) + " has no field '"+field + "'" );
-        if ( !fileCtx->hasStorage(current_type) ) throw std::runtime_error(var->getRowCol() + " Unknown storage" );
+        if ( !fileCtx->hasStorage(current_type) ) throw std::runtime_error(var->getRowCol() + " Unknown storage '" + fileCtx->typeToStr(current_type) +"'");
         auto& fields = fileCtx->getStorageDecl(current_type).fields;
         auto it = fields.find(field);
         if ( it == fields.end() ) throw std::runtime_error(var->getRowCol() + " Unknown member '"+ field + "' of storage '"+ fileCtx->typeToStr(current_type) +"'");
@@ -209,7 +210,7 @@ void CallTreeBuilder::visit(tree::Call* call)
     bool is_inlined = fileCtx->hasInlined(name);
     if ( !is_function && !is_inlined )
     {
-        throw std::runtime_error( call->getRowCol() + " Unknown name to call :" + name);
+        throw std::runtime_error( call->getRowCol() + " Unknown name to call: " + name);
     }
     try {
 
@@ -315,7 +316,6 @@ void CallTreeBuilder::visit(tree::ScheduledWhile* while_){
 
     vars.pop();
 }
-
 
 std::vector<std::string> CallTreeBuilder::findRecursion()
 {

@@ -83,6 +83,7 @@ Value CompilerVisitor::getTopOperand()
 void CompilerVisitor::visit(tree::Namespace* nmsp)
 {
     fileCtx->currentNamespace = { nmsp->namespace_,nmsp->path };
+    fileCtx->currentDefinedNamespace = { nmsp->namespace_,nmsp->path };
 }
 
 void CompilerVisitor::visit(tree::Function* func)
@@ -231,7 +232,7 @@ void CompilerVisitor::genStructMemberAccess(tree::Variable* var,Value& value,siz
         auto& field = var->getName();
         i++;
         if ( Type::isBuiltinType(value.type) ) throw std::runtime_error(  getRowCol(var) + " Builtin type " + fileCtx->typeToStr(value.type) + " has no field '"+field + "'" );
-        if ( !fileCtx->hasStorage(value.type) ) throw std::runtime_error(getRowCol(var) + " Unknown storage" );
+        if ( !fileCtx->hasStorage(value.type) ) throw std::runtime_error(getRowCol(var) + " Unknown storage '"+fileCtx->typeToStr(value.type)+"'" );
         auto& fields = fileCtx->getStorageDecl(value.type).fields;
         auto it = fields.find(field);
         if ( it == fields.end() ) throw std::runtime_error(getRowCol(var) + " Unknown member '"+ field + "' of storage '"+ fileCtx->typeToStr(value.type) +"'");
