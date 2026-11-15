@@ -1,4 +1,5 @@
 datapack/
+.vscode/
 /text.test
 /TaskList.txt
 build/

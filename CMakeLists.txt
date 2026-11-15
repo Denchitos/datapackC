@@ -7,5 +7,5 @@ file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_SOURCE_DIR}/src/*.cpp"
 )
 
-add_executable(dpcompiler ${APP_SOURCES})
-target_link_options(dpcompiler PRIVATE -static)
+add_executable(datapackc ${APP_SOURCES})
+target_link_options(datapackc PRIVATE -static)

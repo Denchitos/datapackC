@@ -24,7 +24,7 @@
 и запустите
 
 ```text
-    ./datapackC <file>
+    build/datapackC <file>
 ```
 
 
