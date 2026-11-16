@@ -12,6 +12,7 @@ public:
     void visit(tree::Namespace*) override;
     void visit(tree::StorageDecl*) override;
     void visit(tree::Objective*) override;
+    void visit(tree::Import*) override;
 };
 
 class FuncDeclVisitor : public EmptyVisitor

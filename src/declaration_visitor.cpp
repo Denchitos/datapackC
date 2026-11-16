@@ -4,7 +4,7 @@
 #include"tree/namespace.h"
 #include"tree/storage.h"
 #include"tree/objective.h"
-
+#include"tree/import.h"
 static std::string getRowCol( tree::Node* node ) 
 {
     return "[ " + std::to_string(node->getRow()) + " , " + std::to_string(node->getColumn()) + " ]";
@@ -14,6 +14,11 @@ void StorageDeclVisitor::visit(tree::Namespace* nmsp)
 {
     fileCtx->currentNamespace = { nmsp->namespace_,nmsp->path };
     fileCtx->currentDefinedNamespace = { nmsp->namespace_,nmsp->path };
+}
+
+void StorageDeclVisitor::visit(tree::Import* imp)
+{
+    std::cout<<"import file: "<<imp->file_name<<"\n";
 }
 
 void StorageDeclVisitor::visit(tree::StorageDecl* storage_decl)

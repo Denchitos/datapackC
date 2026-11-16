@@ -186,7 +186,7 @@ int main(int argc,char** argv)
 
     Parser p;
     p.setTokens(res);
-
+    p.setCurrentFile(file_name);
     std::cout<<"Парсинг...\n";
 
     auto v = p.parse();

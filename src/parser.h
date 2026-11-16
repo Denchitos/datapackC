@@ -4,6 +4,10 @@
 #include<string>
 #include<expected>
 #include<optional>
+
+#include<filesystem>
+namespace fs = std::filesystem;
+
 #include"parser_base.h"
 
 #include"token.h"
@@ -22,7 +26,13 @@ struct ParsingMessage
 
 class Parser : public ParserBase<Token>
 {
+    fs::path currentFile;
 public:
+    void setCurrentFile(const fs::path& file_name)
+    {
+        if ( file_name.is_absolute() ) currentFile = file_name;
+        else currentFile = fs::absolute(file_name);
+    }
     Parser()
     {
     
@@ -38,7 +48,7 @@ public:
     std::vector<tree::NodePtr> parse();
 
     std::string parseName();
-    
+    tree::NodePtr parseImport();    
     tree::NodePtr parseObjective();
     tree::NodePtr parseNamespace();
     tree::FunctionPtr parseFunction( bool can_have_return ); 

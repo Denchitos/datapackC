@@ -9,6 +9,7 @@
 #include"tree/while.h"
 #include"tree/return.h"
 #include"tree/storage.h"
+#include"tree/import.h"
 #include<optional>
 #include<unordered_set>
 ////PARSING////
@@ -16,21 +17,27 @@
 ////PARSING////
 ////PARSING////
 
+static void emplace_back(std::vector<tree::NodePtr>& ast,tree::NodePtr&& node)
+{
+    if ( node ) ast.emplace_back(std::move(node));
+}
+
 std::vector<tree::NodePtr> Parser::parse()
 {
     std::vector<tree::NodePtr> v;
 
     while (!atEnd())
     {
-        if (match(Token{"def",Token::Word})) v.emplace_back(parseFunction(true));
+        if (match(Token{"def",Token::Word})) emplace_back(v,parseFunction(true));
         else if (match(Token{"inline",Token::Word})){
             auto& tok = look();
             auto inl = parseFunction(false);
-            v.emplace_back(std::make_unique<tree::InlinedFunction>(tok,std::move(inl)));
+            emplace_back(v,std::make_unique<tree::InlinedFunction>(tok,std::move(inl)));
         }
-        else if (compare(Token{"namespace",Token::Word})) v.emplace_back(parseNamespace());
-        else if (compare(Token{"objective",Token::Word})) v.emplace_back(parseObjective());
-        else if (compare(Token{"storage",Token::Word})) v.emplace_back(parseStorageDecl());
+        else if (compare(Token{"namespace",Token::Word})) emplace_back(v,parseNamespace());
+        else if (compare(Token{"objective",Token::Word})) emplace_back(v,parseObjective());
+        else if (compare(Token{"storage",Token::Word})) emplace_back(v,parseStorageDecl());
+        else if (compare(Token{"import",Token::Word})) emplace_back(v,parseImport());
         else
         {
             error("Undefined Token in global space");
@@ -39,6 +46,38 @@ std::vector<tree::NodePtr> Parser::parse()
     }
 
     return v;
+}
+
+tree::NodePtr Parser::parseImport()
+{
+    if ( !expect(Token{"import",Token::Word},"Importing instruction starts with \"import\"") )
+    {
+        statementPanic();
+        return nullptr;
+    }
+
+    if ( !expect(Token::Literal,"Importing file must be a literal") )
+    {
+        statementPanic();
+        return nullptr;
+    }
+
+    fs::path specified_file = look(-1).tok;
+
+    auto imp = std::make_unique<tree::Import>(look(-2));
+
+    if ( specified_file.is_absolute() )
+    {
+        imp->file_name = specified_file;
+    }
+    else{
+        auto abs_name = currentFile.parent_path()/specified_file;
+        imp->file_name = fs::weakly_canonical(abs_name);
+    }
+
+    match(Token::EL);
+
+    return imp;
 }
 
 tree::NodePtr Parser::parseObjective()
