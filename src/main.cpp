@@ -213,12 +213,14 @@ int main(int argc,char ** argv)
     system("chcp 65001 > nul");
     if ( (argc != 2 && argc !=3) )
     {
+        fs::path path(argv[0]);
+
         std::cerr<<"How to use:\n";
-        std::cerr<<"    - datapackc <source>\n";
-        std::cerr<<"    - datapackc <source> <traget directory>\n";
+        std::cerr<< path.filename().string() <<" <source>\n";
+        std::cerr<< path.filename().string() <<" <source> <target directory>\n";
         return 1;
     }
-
+    
     std::string target = "datapack";
 
     if ( argc==3 )

@@ -1,0 +1,20 @@
+namespace alpha
+
+storage alpha
+{
+    a : int
+
+    inline say(self : $ alpha)
+    {
+        raw say x
+    }
+}
+
+namespace beta
+
+def func()
+{
+    let a : alpha:alpha = {1}
+
+    a.say()
+}
