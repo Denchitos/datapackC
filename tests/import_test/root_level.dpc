@@ -1,0 +1,7 @@
+import "root/main.dpc"
+import "root/sub/sub_file.dpc"
+
+def b
+{
+    raw say 15
+}

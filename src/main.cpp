@@ -11,6 +11,7 @@
 #include"declaration_visitor.h"
 #include"return_checker.h"
 #include"call_tree_builder.h"
+#include"ast_builder.h"
 namespace fs = std::filesystem;
 
 void compile(std::vector<tree::NodePtr>& v)
@@ -144,7 +145,7 @@ void compile(std::vector<tree::NodePtr>& v)
     std::cout<<"Compilation Finished!\n";
 }
 
-int main(int argc,char** argv)
+int old_main(int argc,char** argv)
 {
     system("chcp 65001 > nul");
     if ( argc != 2 )
@@ -203,4 +204,34 @@ int main(int argc,char** argv)
     if (!parsing_msg.empty()) return 1;
 
     compile(v);
+
+    return 0;
+}
+
+int main(int argc,char ** argv)
+{
+    system("chcp 65001 > nul");
+    if ( argc != 2 )
+    {
+        std::cerr<<"Программа ожидает 1 файл";
+        return 1;
+    }
+
+    std::string file_name(argv[1]);
+
+    auto lexer = std::make_shared<Lexer>();
+    auto parser = std::make_shared<Parser>();
+
+    FilesASTBuilder ast_builder(lexer,parser);
+
+    ast_builder.buildFile(file_name);
+
+    std::cout<<"[AST BUILDING FINISHED]\n";
+
+    for ( auto & [ path,ast ] : ast_builder.getProcFiles() )
+    {
+        std::cout<<"Compiling File...:\n   "<<path<<"\n";
+        compile(ast.ast);
+    }
+
 }
