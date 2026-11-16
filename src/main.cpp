@@ -14,7 +14,7 @@
 #include"ast_builder.h"
 namespace fs = std::filesystem;
 
-void compile(std::vector<tree::NodePtr>& v)
+void compile(std::vector<tree::NodePtr>& v,const std::string& target)
 {
     auto ret_checker = std::make_unique<ReturnChecker>();
     
@@ -109,7 +109,7 @@ void compile(std::vector<tree::NodePtr>& v)
 
     for ( auto& it : visite->compiled_functions )
     {
-        fs::path path( "datapack/data/" + it.toPath() );
+        fs::path path( target+"/data/" + it.toPath() );
         fs::create_directories(path.parent_path());
         std::ofstream out(path);
         for (auto& line : it.text )
@@ -121,7 +121,7 @@ void compile(std::vector<tree::NodePtr>& v)
     if ( ctx->hasLoadFile() )
     {
         auto& load = ctx->getLoadFile();
-        fs::path path( "datapack/data/" + load.toPath() );
+        fs::path path( target+"/data/" + load.toPath() );
         fs::create_directories(path.parent_path());
         std::ofstream out(path);
         for (auto& line : load.text )
@@ -133,7 +133,7 @@ void compile(std::vector<tree::NodePtr>& v)
     if ( ctx->hasTickFile() )
     {
         auto& tick = ctx->getTickFile();
-        fs::path path( "datapack/data/" + tick.toPath() );
+        fs::path path( target+"/data/" + tick.toPath() );
         fs::create_directories(path.parent_path());
         std::ofstream out(path);
         for (auto& line : tick.text )
@@ -148,7 +148,7 @@ void compile(std::vector<tree::NodePtr>& v)
 int old_main(int argc,char** argv)
 {
     system("chcp 65001 > nul");
-    if ( argc != 2 )
+    if ( (argc != 2 || argc != 3) )
     {
         std::cerr<<"Программа ожидает 1 файл";
         return 1;
@@ -203,7 +203,7 @@ int old_main(int argc,char** argv)
     
     if (!parsing_msg.empty()) return 1;
 
-    compile(v);
+    //compile(v);
 
     return 0;
 }
@@ -211,10 +211,19 @@ int old_main(int argc,char** argv)
 int main(int argc,char ** argv)
 {
     system("chcp 65001 > nul");
-    if ( argc != 2 )
+    if ( (argc != 2 && argc !=3) )
     {
-        std::cerr<<"Программа ожидает 1 файл";
+        std::cerr<<"How to use:\n";
+        std::cerr<<"    - datapackc <source>\n";
+        std::cerr<<"    - datapackc <source> <traget directory>\n";
         return 1;
+    }
+
+    std::string target = "datapack";
+
+    if ( argc==3 )
+    {
+        target = argv[2];
     }
 
     std::string file_name(argv[1]);
@@ -231,7 +240,7 @@ int main(int argc,char ** argv)
     for ( auto & [ path,ast ] : ast_builder.getProcFiles() )
     {
         std::cout<<"Compiling File...:\n   "<<path<<"\n";
-        compile(ast.ast);
+        compile(ast.ast,target);
     }
 
 }
