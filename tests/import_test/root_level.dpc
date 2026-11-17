@@ -1,7 +1,9 @@
-import "root/main.dpc"
-import "root/sub/sub_file.dpc"
+storage alpha
+{
+    a : int
+}
 
-def b
+def b()
 {
     raw say 15
 }

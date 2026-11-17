@@ -1,3 +1,6 @@
-
-import "like_main.dpc"
 import "../root_level.dpc"
+
+def ango()
+{
+    let a : minecraft:alpha = { 1 }
+}

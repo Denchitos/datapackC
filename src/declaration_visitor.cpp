@@ -18,6 +18,30 @@ void StorageDeclVisitor::visit(tree::Namespace* nmsp)
 
 void StorageDeclVisitor::visit(tree::Import* imp)
 {
+    auto& path = imp->file_name;
+    
+    if ( visited_import.contains(path) ) return;
+
+    visited_import.insert(path);
+
+    auto it = modules->find(path);
+
+    auto old_namesp = fileCtx->currentNamespace;
+
+    auto old_def_nmsp = fileCtx->currentDefinedNamespace;
+
+    fileCtx->currentNamespace = fileCtx->currentDefinedNamespace = {"minecraft"};
+
+    if ( it == modules->end() )
+        throw std::runtime_error( imp->getRowCol() + " Unexpected file name: " + fs::relative(path).generic_string()+"\n    "+path.string());
+    
+    for ( auto & node : it->second.ast )
+    {
+        node->accept(this);
+    }
+
+    fileCtx->currentNamespace = old_namesp;
+    fileCtx->currentDefinedNamespace = old_def_nmsp;
 }
 
 void StorageDeclVisitor::visit(tree::StorageDecl* storage_decl)
@@ -49,6 +73,31 @@ void FuncDeclVisitor::visit(tree::Namespace* nmsp)
 {
     fileCtx->currentNamespace = { nmsp->namespace_,nmsp->path };
     fileCtx->currentDefinedNamespace = { nmsp->namespace_,nmsp->path };
+}
+
+void FuncDeclVisitor::visit(tree::Import* imp)
+{
+    auto& path = imp->file_name;
+    if ( visited_import.contains(path) ) return;
+
+    visited_import.insert(path);
+
+    auto it = modules->find(path);
+
+    auto old_namesp = fileCtx->currentNamespace;
+
+    auto old_def_nmsp = fileCtx->currentDefinedNamespace;
+
+    fileCtx->currentNamespace = fileCtx->currentDefinedNamespace = {"minecraft"};
+
+    if ( it == modules->end() ) throw std::runtime_error( imp->getRowCol() + "Unexpected file name: " + fs::relative(path).generic_string());
+    for ( auto & node : it->second.ast )
+    {
+        node->accept(this);
+    }
+
+    fileCtx->currentNamespace = old_namesp;
+    fileCtx->currentDefinedNamespace = old_def_nmsp;
 }
 
 FunctionDeclaration FuncDeclVisitor::makeFuncDecl(tree::Function* func)

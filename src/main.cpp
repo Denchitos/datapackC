@@ -14,7 +14,7 @@
 #include"ast_builder.h"
 namespace fs = std::filesystem;
 
-void compile(std::vector<tree::NodePtr>& v,const std::string& target)
+bool compile(std::vector<tree::NodePtr>& v,std::shared_ptr<Modules> modules,const std::string& target,bool create_files)
 {
     auto ret_checker = std::make_unique<ReturnChecker>();
     
@@ -27,7 +27,7 @@ void compile(std::vector<tree::NodePtr>& v,const std::string& target)
     
     auto codeG = std::make_shared<ExprCodeGen>(ctx);
 
-    auto store_decl = std::make_unique<StorageDeclVisitor>(ctx);
+    auto store_decl = std::make_unique<StorageDeclVisitor>(ctx,modules);
 
     try {
         for ( auto& it : v )
@@ -37,14 +37,14 @@ void compile(std::vector<tree::NodePtr>& v,const std::string& target)
     }
     catch ( std::exception& e )
     {
-        std::cout<<"[Declarations] "<<e.what()<<"\n";
-        return;
+        std::cout<<"[ERROR] [Declarations] "<<e.what()<<"\n";
+        return false;
     }
 
     std::cout<<"Declaration...\n";
 
 
-    auto declarator = std::make_unique<FuncDeclVisitor>(ctx);
+    auto declarator = std::make_unique<FuncDeclVisitor>(ctx,modules);
 
     try {
         for ( auto& it : v )
@@ -54,8 +54,8 @@ void compile(std::vector<tree::NodePtr>& v,const std::string& target)
     }
     catch ( std::exception& e )
     {
-        std::cout<<"[Definer] "<<e.what()<<"\n";
-        return;
+        std::cout<<"[ERROR] [Definer] "<<e.what()<<"\n";
+        return false;
     }
 
     std::cout<<"Build call tree...\n";
@@ -70,8 +70,8 @@ void compile(std::vector<tree::NodePtr>& v,const std::string& target)
     }
     catch ( std::exception& e )
     {
-        std::cout<<"[TreeBuilder] "<<e.what()<<"\n";
-        return;
+        std::cout<<"[ERROR] [TreeBuilder] "<<e.what()<<"\n";
+        return false;
     }
 
     auto rec = tree_builder->findRecursion();
@@ -84,7 +84,7 @@ void compile(std::vector<tree::NodePtr>& v,const std::string& target)
         {
             std::cout<<it<<"\n";
         }
-        return;
+        return false;
     }
 
     std::cout<<"No Recursion detected\n";
@@ -102,10 +102,10 @@ void compile(std::vector<tree::NodePtr>& v,const std::string& target)
     catch ( std::exception& e )
     {
         std::cout<<"[ERROR] "<<e.what()<<"\n";
-        return;
+        return false;
     }
 
-    std::cout<<"Making Datapack\n";
+    if ( !create_files ) return false;
 
     for ( auto& it : visite->compiled_functions )
     {
@@ -143,6 +143,8 @@ void compile(std::vector<tree::NodePtr>& v,const std::string& target)
     }
 
     std::cout<<"Compilation Finished!\n";
+
+    return true;
 }
 
 int start(int argc,char ** argv)
@@ -195,13 +197,17 @@ int start(int argc,char ** argv)
         return 2;
     }
 
+    bool build_files = true;
+
     for ( auto & [ path,ast ] : *(ast_builder.getProcFiles()) )
     {
         std::cout<<"Compiling File...:\n   "<<path<<"\n";
-        compile(ast.ast,target);
+        build_files = compile(ast.ast,ast_builder.getProcFiles(),target,build_files);
+        std::cout<<"\n";
     }
-    
-    return 0;
+
+    if ( build_files ) return 0;
+    else return 3;
 }
 
 int main(int argc,char** argv)
@@ -213,7 +219,14 @@ int main(int argc,char** argv)
     catch(std::exception& e)
     {
         std::cerr<<e.what()<<"\n";
+        res = 5;
     }
-    std::cout<<"Program Finished!";
+
+
+    if (res == 0)
+        std::cout<<"Program Finished!\n";
+    else
+        std::cerr<<"[ERRORS] Got errors while compiling project\n";
+    std::cout<<"Exit code: "<<res<<"\n";
     return res;
 }   

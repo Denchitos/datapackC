@@ -30,9 +30,8 @@ public:
     {
         built_files = std::make_shared<Modules>();
     }
-    bool buildFile(const std::string& file_name)
+    bool buildFile(fs::path path)
     {
-        fs::path path = file_name;
 
         if ( !path.is_absolute() ) path = fs::absolute(path);
 
@@ -42,7 +41,7 @@ public:
 
         if ( !file.is_open())
         {
-            std::cerr<<"Файл "<<file_name<<" не найден. Был импортирован из "<<fs::relative(current_file) ;
+            std::cerr<<"Файл "<<path.generic_string()<<" не найден. Был импортирован из "<<fs::relative(current_file)<<"\n";
             return false;
         }
         std::string line;
@@ -105,7 +104,7 @@ public:
         }
         dependencies_graph[current_file].insert(imp->file_name);
 
-        if ( !built_files->contains(imp->file_name) ) buildFile(imp->file_name.generic_string());
+        if ( !built_files->contains(imp->file_name) ) buildFile(imp->file_name);
     }
 
     void printDependenciesGraph()
