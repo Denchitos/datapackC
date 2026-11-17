@@ -19,6 +19,7 @@ class FuncDeclVisitor : public EmptyVisitor
 {
     std::shared_ptr<FileCompilationContext> fileCtx;
 
+
     Value declArg(tree::VarDecl*);
     FunctionDeclaration makeFuncDecl(tree::Function* func);
     InlinedFunctionDeclaration makeInlinedFuncDecl(tree::InlinedFunction* func);

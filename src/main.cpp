@@ -87,7 +87,7 @@ void compile(std::vector<tree::NodePtr>& v,const std::string& target)
         return;
     }
 
-    std::cout<<"No Recursion detected";
+    std::cout<<"No Recursion detected\n";
 
     auto visite =  std::make_unique<CompilerVisitor>(ctx,codeG); 
     
@@ -145,79 +145,16 @@ void compile(std::vector<tree::NodePtr>& v,const std::string& target)
     std::cout<<"Compilation Finished!\n";
 }
 
-int old_main(int argc,char** argv)
-{
-    system("chcp 65001 > nul");
-    if ( (argc != 2 || argc != 3) )
-    {
-        std::cerr<<"Программа ожидает 1 файл";
-        return 1;
-    }
-
-    std::string file_name(argv[1]);
-    std::ifstream file(file_name);
-
-    if ( !file.is_open())
-    {
-        std::cerr<<"Файл "<<file_name<<" Не найден";
-        return 2;
-    }
-
-    std::string line;
-    std::string text;
-    while ( std::getline(file,line) )
-    {
-        text+=line+'\n';
-    }
-    //std::cout<<text<<"\n\n\n";
-
-    std::cout<<"Лексинг...\n";
-    Lexer l;
-    l.setText(std::move(text));
-    auto res = l.lex();
-
-    // for (auto& it : res)
-    // {
-    //     std::cout<<"["<<std::setw(5)<<it.row<<","<<std::setw(5)<<it.col<<"]"<<"\t - ";
-    //     if ( it.tok=="\n" ) std::cout<<"EOL\n";
-    //     else std::cout<<"{"<<it.tok<<"}\n";
-    // }
-
-    std::cout<<"Лексинг окончен\n";
-
-    Parser p;
-    p.setTokens(res);
-    p.setCurrentFile(file_name);
-    std::cout<<"Парсинг...\n";
-
-    auto v = p.parse();
-
-    auto parsing_msg = p.getMessages();
-
-    for ( auto& it : parsing_msg )
-    {
-        std::cout<<"["<<it.token.row<<" - "<<it.token.col<<" - "<< it.token.tok << "] "<<it.msg<<"\n";
-    }
-
-    std::cout<<"Парсинг окончен\n";
-    
-    if (!parsing_msg.empty()) return 1;
-
-    //compile(v);
-
-    return 0;
-}
-
-int main(int argc,char ** argv)
+int start(int argc,char ** argv)
 {
     system("chcp 65001 > nul");
     if ( (argc != 2 && argc !=3) )
     {
         fs::path path(argv[0]);
-
+        auto program_file = fs::relative(path).generic_string(); 
         std::cerr<<"How to use:\n";
-        std::cerr<< path.filename().string() <<" <source>\n";
-        std::cerr<< path.filename().string() <<" <source> <target directory>\n";
+        std::cerr<< program_file <<" <source>\n";
+        std::cerr<< program_file <<" <source> <target directory>\n";
         return 1;
     }
     
@@ -238,11 +175,45 @@ int main(int argc,char ** argv)
     ast_builder.buildFile(file_name);
 
     std::cout<<"[AST BUILDING FINISHED]\n";
+    
+    auto vec = ast_builder.findCyclicImport();
 
-    for ( auto & [ path,ast ] : ast_builder.getProcFiles() )
+    if ( !vec.empty() )
+    {
+        std::cerr<<"Detected Cyclic Import:\n";
+        for ( auto & pathes : vec )
+        {
+            std::string pref="    ";
+            std::cerr<<"...->\n";
+            for ( auto & item : pathes )
+            {
+                std::cerr<<pref<<fs::relative(item).generic_string()<<"->\n";
+                pref.append("    ");
+            }
+            std::cerr<<pref<<"->...\n";
+        }
+        return 2;
+    }
+
+    for ( auto & [ path,ast ] : *(ast_builder.getProcFiles()) )
     {
         std::cout<<"Compiling File...:\n   "<<path<<"\n";
         compile(ast.ast,target);
     }
-
+    
+    return 0;
 }
+
+int main(int argc,char** argv)
+{
+    int res = 0;
+    try {
+        res = start( argc,argv );
+    }
+    catch(std::exception& e)
+    {
+        std::cerr<<e.what()<<"\n";
+    }
+    std::cout<<"Program Finished!";
+    return res;
+}   

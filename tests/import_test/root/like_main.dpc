@@ -1,1 +1,2 @@
 import "sub/sub_file.dpc"
+import "main.dpc"

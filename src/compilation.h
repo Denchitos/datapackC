@@ -421,13 +421,20 @@ std::unordered_set<std::string> initialized_structs;
     bool hasOperation(const std::string& op,const Type& t1,const Type& t2)
     {
         auto it = Type::builtin_operation_table.find({op,t1,t2});
-        return it != Type::builtin_operation_table.end();
+        if (it != Type::builtin_operation_table.end()) return true;
+
+        if ( t1.type == Type::struct_t && t2.type == Type::initializer_list ) return true;
+
+        return false;
     }
 
     Type getOperationResult(const std::string& op,const Type& t1,const Type& t2)
     {
         auto it = Type::builtin_operation_table.find({op,t1,t2});
-        if ( it == Type::builtin_operation_table.end() ) throw std::runtime_error("Unexpected Operation Triplet - ["+typeToStr(t1) + op + typeToStr(t2) +"]");        
-        return it->second;
+        if ( it != Type::builtin_operation_table.end() ) return it->second;;        
+
+        if ( t1.type == Type::struct_t && t2.type == Type::initializer_list ) return t1;
+
+        throw std::runtime_error("Unexpected Operation Triplet - ["+typeToStr(t1) + op + typeToStr(t2) +"]");
     }
 };

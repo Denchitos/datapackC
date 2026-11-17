@@ -18,7 +18,6 @@ void StorageDeclVisitor::visit(tree::Namespace* nmsp)
 
 void StorageDeclVisitor::visit(tree::Import* imp)
 {
-    std::cout<<"import file: "<<imp->file_name<<"\n";
 }
 
 void StorageDeclVisitor::visit(tree::StorageDecl* storage_decl)

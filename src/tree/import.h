@@ -9,11 +9,14 @@ TREE_BEGIN
 struct Import : public Node
 {
     fs::path file_name;
+    
+    bool bad_import = false;
+
     Import(const Token& tok) : Node(tok){}
 
     void accept(Visitor* vis)
     {
-        vis->visit(this);
+        if ( !bad_import ) vis->visit(this);
     }
 };
 

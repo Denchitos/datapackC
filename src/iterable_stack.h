@@ -50,6 +50,11 @@ public:
         return c.crend();
     }
 
+    void clear()
+    {
+        c.clear();
+    }
+
     const auto& operator[](long long i) const
     {
         if ( i>=0 ) return c[i];
