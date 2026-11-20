@@ -174,10 +174,27 @@ int start(int argc,char ** argv)
 
     FilesASTBuilder ast_builder(lexer,parser);
 
-    ast_builder.buildFile(file_name);
+    ast_builder.pushCandidate(file_name);
+
+    bool ast_building_success = true;
+
+    while (true)
+    {
+        auto candidate = ast_builder.getNextCandidates();
+        
+        if ( !candidate.has_value() ) break;
+        
+        if ( !ast_builder.buildFile(candidate.value()) ) ast_building_success = false;
+    }
 
     std::cout<<"[AST BUILDING FINISHED]\n";
-    
+
+    if ( !ast_building_success )
+    {
+        std::cerr<<"While build AST, Compiler got errors. Compilation stage is unavavilable\n";
+        return 4;
+    }
+
     auto vec = ast_builder.findCyclicImport();
 
     if ( !vec.empty() )

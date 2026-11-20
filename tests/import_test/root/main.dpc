@@ -2,3 +2,5 @@ def ango()
 {
     let x = 5
 }
+
+namespace a

@@ -158,7 +158,7 @@ private:
     
     std::unordered_set<std::string> declared_types;
 
-    int types_counter = 0;
+    static int types_counter;
 public:
     
 std::unordered_set<std::string> initialized_structs;

@@ -42,7 +42,7 @@ public:
         return static_cast<id>(stream.size());
     }
 
-    std::list<ParserMessage>& getMessages()
+    const std::list<ParserMessage>& getMessages()
     {
         return messages;
     }
@@ -59,6 +59,7 @@ protected:
         this->stream = stream;
         this->beforeStartToken = beforeStartToken;
         this->afterEndToken = afterEndToken;
+        this->messages.clear();
     }
 
     void next(id j = 1)

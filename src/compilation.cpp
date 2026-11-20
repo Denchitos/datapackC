@@ -86,6 +86,8 @@ std::string Function::toDotPath() const
     return nmsp.toDotPath()+'.'+name;
 }
 
+int FileCompilationContext::types_counter = 0;
+
 FileCompilationContext::FileCompilationContext()
 {
     symbols.emplace();

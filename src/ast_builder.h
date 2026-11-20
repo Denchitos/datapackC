@@ -1,15 +1,16 @@
+#include<queue>
 #include<filesystem>
 #include<unordered_map>
 #include<fstream>
+#include<expected>
 #include"iterable_stack.h"
 #include"empty_visitor.h"
 #include"tree/node.h"
 #include"lexer.h"
 #include"parser.h"
-
 #include"tree/import.h"
-
 #include"modules.h"
+#include"tree/namespace.h"
 
 
 class FilesASTBuilder : public EmptyVisitor
@@ -20,37 +21,34 @@ class FilesASTBuilder : public EmptyVisitor
     std::shared_ptr<Parser> parser;
     std::shared_ptr<Lexer> lexer;
 
+    std::queue<fs::path> build_candidates;
+
     std::unordered_map<fs::path,std::unordered_set<fs::path>> dependencies_graph;
-public:
-    FilesASTBuilder(std::shared_ptr<Lexer> lexer,std::shared_ptr<Parser> parser) : lexer(lexer) , parser(parser)
-    {
-        built_files = std::make_shared<Modules>();
-    }
-    FilesASTBuilder(std::shared_ptr<Modules> built_files,std::shared_ptr<Lexer> lexer,std::shared_ptr<Parser> parser) : built_files(built_files) , lexer(lexer) , parser(parser)
-    {
-        built_files = std::make_shared<Modules>();
-    }
-    bool buildFile(fs::path path)
-    {
 
-        if ( !path.is_absolute() ) path = fs::absolute(path);
+    std::optional<Namespace> current_nmsp = std::nullopt;
 
-        if ( built_files->contains(path) ) return false;
 
+    std::expected<std::string,std::string> readFile(const fs::path& path)
+    {
         std::ifstream file(path);
 
         if ( !file.is_open())
         {
-            std::cerr<<"Файл "<<path.generic_string()<<" не найден. Был импортирован из "<<fs::relative(current_file)<<"\n";
-            return false;
+            return std::unexpected("Файл "+path.generic_string()+" не найден. Был импортирован из "+fs::relative(current_file).generic_string());
         }
+
         std::string line;
         std::string text;
         while ( std::getline(file,line) )
         {
             text+=line+'\n';
         }
+        
+        return text;
+    }
 
+    std::vector<tree::NodePtr> makeAST(std::string&& text,const fs::path& path)
+    {
         std::cout<<"LEXING... "<<fs::relative(path).generic_string()<<"\n";
 
         lexer->setText(std::move(text));
@@ -61,9 +59,58 @@ public:
         parser->setCurrentFile(path);
         parser->setTokens(std::move(tokens));
 
-        auto ast = parser->parse();
+        return parser->parse();
+    }
 
-        auto& parse_msg = parser->getMessages();
+public:
+    FilesASTBuilder(std::shared_ptr<Lexer> lexer,std::shared_ptr<Parser> parser) : lexer(lexer) , parser(parser)
+    {
+        built_files = std::make_shared<Modules>();
+    }
+    
+    FilesASTBuilder(std::shared_ptr<Modules> built_files,std::shared_ptr<Lexer> lexer,std::shared_ptr<Parser> parser) : built_files(built_files) , lexer(lexer) , parser(parser)
+    {
+        built_files = std::make_shared<Modules>();
+    }
+    
+    std::optional<fs::path> getNextCandidates()
+    {
+        if ( build_candidates.empty() ) return std::nullopt;
+
+        auto can = build_candidates.front();
+
+        build_candidates.pop();
+        return can;
+    }
+
+    void pushCandidate(fs::path path)
+    {
+        if ( !path.is_absolute() ) path = fs::absolute(path);
+
+        if ( built_files->contains(path) ) return;
+
+        build_candidates.push(path);
+    }
+
+    bool buildFile(fs::path path)
+    {
+        if ( !path.is_absolute() ) path = fs::absolute(path);
+
+        if ( built_files->contains(path) ) return false;
+
+        auto read = readFile(path);
+        
+        if ( !read.has_value() )
+        {
+            std::cerr<<read.error();
+            return false;
+        }
+
+        auto& text = read.value(); 
+        
+        auto ast = makeAST(std::move(text),path);
+
+        auto parse_msg = parser->getMessages();
 
         if ( !parse_msg.empty() )
         {
@@ -74,21 +121,24 @@ public:
             }
             return false;
         }
-
-        ProcessedFile m{path,std::move(ast)};
-
-        built_files->emplace(path,std::move(m));
-
-
-        auto old_current = current_file;
+        
         current_file = path;
+        
+        current_nmsp = std::nullopt;
 
-        for ( auto & it : built_files->at(path).ast )
+        for ( auto & it : ast )
         {
             it->accept(this);
         }
 
-        current_file = old_current;
+        if ( !current_nmsp.has_value() )
+        {
+            std::cerr<<"[ERROR] File "<<fs::relative(path)<<" has not namespace declaration ( Compilation stage is unavailable )\n";
+            return false;
+        }
+
+        ProcessedFile m{path,std::move(ast),nullptr,current_nmsp.value()};
+        built_files->emplace(path,std::move(m));
 
         return true;
     }
@@ -97,14 +147,35 @@ public:
     {
         if ( current_file == imp->file_name )
         {
-
             std::cerr<<"Файл "<<fs::relative(current_file).generic_string() << " импортирует сам себя\n    Этот импорт не засчитается\n";
             imp->bad_import = true;
             return;
         }
         dependencies_graph[current_file].insert(imp->file_name);
 
-        if ( !built_files->contains(imp->file_name) ) buildFile(imp->file_name);
+        if ( !built_files->contains(imp->file_name) ) build_candidates.push(imp->file_name);
+    }
+
+    void visit(tree::Namespace* nmsp)
+    {
+        if ( current_nmsp == std::nullopt )
+        {
+            Namespace new_nmsp(nmsp->namespace_);
+
+            new_nmsp.path.reserve(nmsp->path.size());
+
+            for ( auto& it : nmsp->path )
+            {
+                new_nmsp.path.emplace_back(it);
+            }
+
+            current_nmsp = new_nmsp;
+        }
+        else
+        {
+            std::cerr<<nmsp->getRowCol()<<" Redeclaration of namespace in file " << fs::relative(current_file)<<"\n";
+            current_nmsp = std::nullopt;
+        }
     }
 
     void printDependenciesGraph()
@@ -126,11 +197,6 @@ public:
         return built_files;
     }
 
-private:
-    enum class Color
-    {
-        Gray,Black,White
-    };
 public:
     class RecursionFinder
     {

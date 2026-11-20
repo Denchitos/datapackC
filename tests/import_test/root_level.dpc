@@ -1,5 +1,7 @@
 import "root/main.dpc"
 
+namespace root
+
 storage alpha
 {
     a : int

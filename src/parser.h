@@ -17,12 +17,6 @@ namespace fs = std::filesystem;
 #include"tree/raw.h"
 #include"tree/expr.h"
 #include"tree/vardecl.h"
-struct ParsingMessage
-{
-    std::string cause;
-    size_t col;
-    size_t row;
-};
 
 class Parser : public ParserBase<Token>
 {
