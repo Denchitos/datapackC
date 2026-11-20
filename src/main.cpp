@@ -14,7 +14,7 @@
 #include"ast_builder.h"
 namespace fs = std::filesystem;
 
-bool compile(std::vector<tree::NodePtr>& v,std::shared_ptr<Modules> modules,const std::string& target,bool create_files)
+bool compile(const fs::path& path,std::vector<tree::NodePtr>& v,std::shared_ptr<Modules> modules,const std::string& target,bool create_files)
 {
     auto ret_checker = std::make_unique<ReturnChecker>();
     
@@ -24,7 +24,10 @@ bool compile(std::vector<tree::NodePtr>& v,std::shared_ptr<Modules> modules,cons
     }
 
     auto ctx = std::make_shared<FileCompilationContext>();
-    
+
+    ctx->currentNamespace = modules->at(path).nmsp;
+    ctx->currentDefinedNamespace = modules->at(path).nmsp;
+
     auto codeG = std::make_shared<ExprCodeGen>(ctx);
 
     auto store_decl = std::make_unique<StorageDeclVisitor>(ctx,modules);
@@ -219,7 +222,7 @@ int start(int argc,char ** argv)
     for ( auto & [ path,ast ] : *(ast_builder.getProcFiles()) )
     {
         std::cout<<"Compiling File...:\n   "<<fs::relative(path)<<"\n";
-        build_files = compile(ast.ast,ast_builder.getProcFiles(),target,build_files);
+        build_files = compile(path,ast.ast,ast_builder.getProcFiles(),target,build_files);
         std::cout<<"\n";
     }
 

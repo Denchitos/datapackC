@@ -44,7 +44,7 @@ public:
     void visit(tree::NumberLiteral*) override;
     void visit(tree::TextLiteral*) override;
     void visit(tree::RawSelector*) override;
-    void visit(tree::Namespace*) override;
+    void visit(tree::Namespace*) override {}
     void visit(tree::MemberAccess*) override;
         void genStructMemberAccess(tree::Variable* node,Value& value,size_t& i);
         void genCallMemberAccess(tree::Call*mem, Value& value,size_t &i);

@@ -80,12 +80,6 @@ Value CompilerVisitor::getTopOperand()
     return rhs;
 };
 
-void CompilerVisitor::visit(tree::Namespace* nmsp)
-{
-    fileCtx->currentNamespace = { nmsp->namespace_,nmsp->path };
-    fileCtx->currentDefinedNamespace = { nmsp->namespace_,nmsp->path };
-}
-
 void CompilerVisitor::visit(tree::Function* func)
 {
     fileCtx->newFunction(func->getName());
