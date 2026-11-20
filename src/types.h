@@ -6,6 +6,7 @@
 
 struct Type;
 struct OperationTriplet;
+struct OperationDuplet;
 
 namespace std {
     template<>
@@ -16,6 +17,11 @@ namespace std {
     template<>
     struct hash<OperationTriplet> {
         std::size_t operator()(const OperationTriplet& t) const;
+    };
+
+    template<>
+    struct hash<OperationDuplet> {
+        std::size_t operator()(const OperationDuplet& t) const;
     };
 }
 
@@ -46,6 +52,8 @@ struct Type
     static std::optional<std::string> toStr(const Type& t);
     
     static std::unordered_map<OperationTriplet,Type> builtin_operation_table;
+
+    static std::unordered_map<OperationDuplet,Type> builtin_unary_operation_table;
 
     bool operator==(const Type&t) const
     {
@@ -88,6 +96,17 @@ struct OperationTriplet
     bool operator==(const OperationTriplet& t) const
     {
         return op==t.op && left == t.left && right == t.right;
+    }
+};
+
+struct OperationDuplet
+{
+    std::string op;
+    Type expr;
+
+    bool operator==(const OperationDuplet& t) const
+    {
+        return op==t.op && expr == t.expr;
     }
 };
 

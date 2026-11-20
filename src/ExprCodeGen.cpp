@@ -19,10 +19,33 @@ Value ExprCodeGen::genOperation(const Value& lhs,const Value& rhs)\
     }\
 }\
 
+
+
 ////USEFUL////USEFUL////USEFUL////USEFUL////USEFUL////USEFUL////USEFUL////USEFUL////USEFUL////
 ////USEFUL////USEFUL////USEFUL////USEFUL////USEFUL////USEFUL////USEFUL////USEFUL////USEFUL////
 ////USEFUL////USEFUL////USEFUL////USEFUL////USEFUL////USEFUL////USEFUL////USEFUL////USEFUL////
 ////USEFUL////USEFUL////USEFUL////USEFUL////USEFUL////USEFUL////USEFUL////USEFUL////USEFUL////
+
+static std::string processNumberLiteral(const Value& lhs)
+{
+    if ( lhs.type != Type::numberLiteral )
+        throw std::runtime_error("UNEXPECTED SITUATION: static Value processNumberLiteral(const Value& lhs) got not a numberLiteral as Value");
+
+    if (lhs.value[0].starts_with("$")) return lhs.value[0];
+
+    try
+    {
+        return std::to_string(std::stoi(lhs.value[0]));
+    }
+    
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what()<<"\n";
+        std::cerr<<"Got: " <<lhs.to_string()<<'\n';
+        throw;
+    }
+    
+}
 
 static Value genComparissonScoreScore(FileCompilationContext* fileCtx,const std::string& op,const Value& lhs,const Value& rhs)
 {
@@ -38,7 +61,7 @@ static Value genComparissonScoreNum(FileCompilationContext* fileCtx,const std::s
 {
     auto temp = fileCtx->getTempScoreVar();
     auto tmp = temp[0] +" "+ temp[1];
-    auto rv = std::to_string(std::stoi(rhs.value[0]));
+    auto rv = processNumberLiteral(rhs);
     if ( op == "==" ) fileCtx->println("execute store result score "+tmp+" run execute if score "+lhs.value[0] + " " + lhs.value[1]+" matches "+rv);
     else if ( op == "!=" ) fileCtx->println("execute store result score "+tmp+" run execute unless score "+lhs.value[0] + " " + lhs.value[1]+" matches "+rv);
     else if ( op=="!=") fileCtx->println("execute store result score "+tmp+" run execute unless score "+lhs.value[0] + " " + lhs.value[1]+" matches "+rv);
@@ -148,7 +171,7 @@ static std::unordered_map<std::pair<Type,Type>,operator_form>  genAssign_map{
     }},
     { {Type::score,Type::numberLiteral},[](FileCompilationContext* fileCtx,const Value& lhs,const Value& rhs)
     {
-        fileCtx->println("scoreboard players set " + lhs.value[0] + " "  + lhs.value[1] + " " + std::to_string(std::stoi(rhs.value[0])) );
+        fileCtx->println("scoreboard players set " + lhs.value[0] + " "  + lhs.value[1] + " " + processNumberLiteral(rhs) );
         return lhs;
     }},
     { {Type::selector,Type::rawSelector},[](FileCompilationContext* fileCtx,const Value& lhs,const Value& rhs) -> Value
@@ -186,7 +209,7 @@ static std::unordered_map<std::pair<Type,Type>,operator_form>  genAssign_map{
     }},
     { { Type::int_t,Type::numberLiteral },[](FileCompilationContext* fileCtx,const Value& lhs,const Value& rhs) -> Value
     {
-        fileCtx->println("data modify "+lhs.to_string() + " set value " + std::to_string(std::stoi(rhs.to_string())) );
+        fileCtx->println("data modify "+lhs.to_string() + " set value " + processNumberLiteral(rhs) );
         return lhs;
     }},
     { { Type::int_t,Type::int_t },[](FileCompilationContext* fileCtx,const Value& lhs,const Value& rhs) -> Value
@@ -732,11 +755,7 @@ static std::unordered_map<std::pair<Type,Type>,operator_form> genMod_map{
         fileCtx->println( command_scoreboard_players("set",tmp[0]+" "+tmp[1],lhs.value[0]));
         fileCtx->println( command_scoreboard_players_operation("%=",tmp[0]+" "+tmp[1],rhs.value[0]+" "+rhs.value[1]));
         return {tmp,Type::score};
-    }},
-    { {Type::numberLiteral,Type::numberLiteral},[](FileCompilationContext* fileCtx,const Value& lhs,const Value& rhs) -> Value
-    {
-        return { std::to_string(std::stoi(lhs.value[0])%std::stoi(rhs.value[0])) ,Type::numberLiteral };
-    }},
+    }}
 };
 GEN_OPERATOR(genMod)
 
@@ -815,3 +834,76 @@ static std::unordered_map<std::pair<Type,Type>,operator_form> genModEq_map{
     }}
 };
 GEN_OPERATOR(genModEq)
+
+
+
+
+Value ExprCodeGen::genUnaryOperator(const std::string& op,const Value& lhs)
+{
+    if ( op == "-" ) return genUnaryNegate(lhs);
+    else if ( op == "!" ) return genUnaryNot(lhs);
+    else throw std::runtime_error( "Code Generation : Unknown UnaryOperator "+op );
+}
+
+
+
+static std::unordered_map<Type,Value(*)(FileCompilationContext* fileCtx, const Value&)> genUnaryNegate_map
+{
+    { Type::score, [](FileCompilationContext* fileCtx,const Value& lhs) -> Value
+    {
+        auto tmp = fileCtx->getTempScoreVar();
+
+        return genMulEq_map[{Type::score,Type::numberLiteral}](fileCtx,{tmp,Type::score},{{std::string{"-1"}},Type::numberLiteral});
+    }},
+    { Type::numberLiteral, [](FileCompilationContext* fileCtx,const Value& lhs) -> Value
+    {
+        auto nvals = lhs.to_string();
+
+        //std::cout<<"Operation Negate:\n";
+        //std::cout<<"\tGot\t\t"<<lhs.to_string()<<"\n";
+        if ( nvals[0] == '-' )
+        {
+            nvals = nvals.substr(1,nvals.length()-2);
+            //std::cout<<"\tConverted to ( minus )\t\t"<<nvals<<"\n";
+        }
+        else
+        {
+            nvals = "-"+nvals;
+            //std::cout<<"\tConverted to ( no minus )\t\t"<<nvals<<"\n";
+        }
+
+        return { {nvals},Type::numberLiteral };
+    }}
+};
+
+static std::unordered_map<Type,Value(*)(FileCompilationContext* fileCtx, const Value&)> genUnaryNot_map
+{
+    { Type::boolLiteral, [](FileCompilationContext*,const Value& lhs) -> Value
+    {
+        std::string nlit = lhs.value[0] == "true" ? "false" : "true"; 
+        return {{nlit},Type::boolLiteral};
+    }},
+    { Type::score_bool, [](FileCompilationContext* fileCtx,const Value& lhs) -> Value
+    {
+        auto tmp = fileCtx->getTempScoreVar();
+
+        Value rval = {tmp,Type::score_bool};
+
+        fileCtx->println("scoreboard players set "+rval.to_string()+" 0");
+        fileCtx->println("execute if score "+lhs.to_string()+" matches 0 run scoreboard players set "+rval.to_string()+" 1");
+
+        return rval;
+    }}
+};
+
+Value ExprCodeGen::genUnaryNegate(const Value& lhs){
+    if ( genUnaryNegate_map.contains(lhs.type) ) return genUnaryNegate_map[lhs.type](fileCtx.get(),lhs);
+
+    else throw std::runtime_error("Code Generation : Unknown Unary Operator '-' for type "+ fileCtx->typeToStr(lhs.type));
+}
+
+Value ExprCodeGen::genUnaryNot(const Value& lhs)
+{
+    if ( genUnaryNot_map.contains(lhs.type) ) return genUnaryNot_map[lhs.type](fileCtx.get(),lhs);
+    throw std::runtime_error("Code Generation : Unknown Unary Operator '!' for type "+ fileCtx->typeToStr(lhs.type));
+}

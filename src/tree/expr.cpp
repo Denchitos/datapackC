@@ -25,6 +25,9 @@ TREE_ACCEPT_MACRO(TextLiteral)
 TREE_ACCEPT_MACRO(InitList)
 
 TREE_ACCEPT_MACRO(BoolLiteral)
+
+TREE_ACCEPT_MACRO(UnaryOperator)
+
 std::string BoolLiteral::toStr()
 {
     return ( val ? "true" : "false" );

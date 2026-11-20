@@ -107,6 +107,18 @@ void CallTreeBuilder::visit(tree::BinaryOperator* binop)
     }
 }
 
+void CallTreeBuilder::visit(tree::UnaryOperator* unop)
+{
+    try
+    {
+        counted_type = fileCtx->getOperationResult(unop->getName(),countType(unop->expr.get()));
+    }
+    catch(std::exception& e)
+    {
+        throw std::runtime_error(unop->getRowCol()+" "+e.what());
+    }
+}
+
 void CallTreeBuilder::visit(tree::MemberAccess* mem)
 {
     auto size = mem->members.size();

@@ -38,6 +38,7 @@ public:
     void visit(tree::Function*) override;
     void visit(tree::Block*) override;
     void visit(tree::BinaryOperator*) override;
+    void visit(tree::UnaryOperator*) override;
     void visit(tree::Variable*) override;
     void visit(tree::VarDecl*) override;
     void visit(tree::NumberLiteral*) override;
@@ -60,6 +61,7 @@ public:
         void emitCallInlined(const std::vector<Value>& call_args,InlinedFunctionDeclaration& fd);
     void visit(tree::Return*) override;
     void visit(tree::StorageDecl* ) override;
+    void visit(tree::Import*) override {};
 
     void visit(tree::InitList* init_list) override
     {

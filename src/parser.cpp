@@ -799,7 +799,15 @@ std::unique_ptr<tree::ExprNode> Parser::parsePrimaryTerm()
 
 std::unique_ptr<tree::ExprNode> Parser::parseTerm()
 {
+    if ( match(Token::Operator) )
+    {
+        auto member = std::make_unique<tree::UnaryOperator>(look(-1));
+        member->expr = parseTerm();
+        return member;
+    }
+    
     auto member = parsePrimaryTerm();
+    
     if ( !compare(Token::Dot) && !compare(Token::OBracket) ) { return member; }
 
     auto mem_access = std::make_unique<tree::MemberAccess>(look());
@@ -829,7 +837,7 @@ std::unique_ptr<tree::ExprNode> Parser::parseTerm()
         {
             error("UnexpectedToken");
             statementPanic();
-            return mem_access;
+            break;
         }
         if ( !compare(Token::Dot) && !compare(Token::OBracket ) ) break;
     }

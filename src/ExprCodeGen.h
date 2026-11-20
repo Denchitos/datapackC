@@ -37,4 +37,10 @@ public:
     Value genModEq(const Value&  lhs,const Value& rhs); // %=
     
     Value genBinaryOperator(const std::string& op, const Value& lhs,const Value& rhs);
+
+    Value genUnaryOperator(const std::string& op,const Value& lhs);
+
+    Value genUnaryNegate(const Value& lhs);
+    Value genUnaryNot(const Value& lhs);
+
 };

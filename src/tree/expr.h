@@ -1,6 +1,5 @@
 #pragma once
 #include "node.h"
-
 #include<vector>
 TREE_BEGIN
 struct ExprNode : public Node
@@ -10,6 +9,7 @@ public:
     {
         Variable,
         BinaryOperator,
+        UnaryOperator,
         NumberLiteral,
         BoolLiteral,
         TextLiteral,
@@ -35,7 +35,7 @@ using ExprNodePtr = std::unique_ptr<ExprNode>;
 struct BinaryOperator : public ExprNode
 {
     BinaryOperator(const Token& tok) : ExprNode(tok,ExprNode::Kind::BinaryOperator){}
-    void accept(Visitor*);
+    void accept(Visitor*) override;
 
     static bool kindOf(ExprNode* en)
     {
@@ -49,11 +49,26 @@ struct BinaryOperator : public ExprNode
 struct Variable : public ExprNode
 {
     Variable(const Token& tok) : ExprNode(tok,ExprNode::Kind::Variable){}
-    void accept(Visitor*);
     static bool kindOf(ExprNode* en)
     {
         return en->getType() == ExprNode::Kind::Variable;
     }
+
+    void accept(Visitor* ) override;
+};
+
+struct UnaryOperator : public ExprNode
+{
+    UnaryOperator(const Token& tok) : ExprNode(tok,ExprNode::Kind::UnaryOperator){}
+    
+    std::unique_ptr<ExprNode> expr = nullptr;
+
+    static bool kindOf(ExprNode* en)
+    {
+        return en->getType() == ExprNode::Kind::UnaryOperator;
+    }
+
+    void accept(Visitor*) override;
 };
 
 struct NumberLiteral : public ExprNode
@@ -61,7 +76,8 @@ struct NumberLiteral : public ExprNode
     NumberLiteral(const Token& tok) : ExprNode(tok,ExprNode::Kind::NumberLiteral){}
     long long toInteger();
     double toDouble();
-    void accept(Visitor*);
+
+    void accept(Visitor*) override;
     
     static bool kindOf(ExprNode* en)
     {
@@ -76,7 +92,7 @@ struct BoolLiteral : public ExprNode
     
     std::string toStr();
     
-    void accept(Visitor*);
+    void accept(Visitor*)override;
 
     static bool kindOf(ExprNode* en)
     {
@@ -87,7 +103,7 @@ struct BoolLiteral : public ExprNode
 struct TextLiteral : public ExprNode
 {
     TextLiteral(const Token& tok) : ExprNode(tok,ExprNode::Kind::TextLiteral) {}
-    void accept(Visitor*);
+    void accept(Visitor*) override;
     static bool kindOf(ExprNode* en)
     {
         return en->getType() == ExprNode::Kind::TextLiteral;
@@ -100,7 +116,7 @@ struct InitList : public ExprNode
     
     std::vector<ExprNodePtr> list;
     
-    void accept(Visitor*);
+    void accept(Visitor*) override;
 
     static bool kindOf(ExprNode* en)
     {

@@ -53,6 +53,7 @@ public:
     void visit(tree::While*);
     void visit(tree::If*);
     void visit(tree::ScheduledWhile*);
+    void visit(tree::UnaryOperator*) override;
 
     Type getSymbol(const std::string& s)
     {

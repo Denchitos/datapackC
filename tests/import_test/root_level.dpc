@@ -1,3 +1,5 @@
+import "root/main.dpc"
+
 storage alpha
 {
     a : int
@@ -6,4 +8,13 @@ storage alpha
 def b()
 {
     raw say 15
+    let a = 5
+    a += -1
+    a = -2
+    a = -a
+    a = -a
+    let c = true
+    c = !c
+
+    c = !true
 }

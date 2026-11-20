@@ -81,6 +81,22 @@ std::size_t std::hash<OperationTriplet>::operator()(const OperationTriplet& opt)
     return (hop<<2)^(h_ops<<4);
 }
 
+std::size_t std::hash<OperationDuplet>::operator()(const OperationDuplet& opt) const
+{
+    std::size_t hop = std::hash<std::string>{}(opt.op);
+    std::size_t h1 = std::hash<Type>{}(opt.expr);
+    auto h_ops = (h1>>2);
+    return (hop<<2)^(h_ops<<4);
+}
+
+std::unordered_map<OperationDuplet,Type> Type::builtin_unary_operation_table
+{
+    {{"-",Type::score},Type::score},
+    {{"-",Type::numberLiteral},Type::numberLiteral},
+    {{"!",Type::score_bool},Type::score_bool},
+    {{"!",Type::boolLiteral},Type::boolLiteral},
+};
+
 std::unordered_map<OperationTriplet,Type> Type::builtin_operation_table
 {
     {{"+",Type::score,Type::score},Type::score},

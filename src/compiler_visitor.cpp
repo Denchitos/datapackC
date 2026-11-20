@@ -428,6 +428,20 @@ void CompilerVisitor::visit(tree::BinaryOperator* binop)
     }
 }
 
+void CompilerVisitor::visit(tree::UnaryOperator* unop)
+{
+    auto& op = unop->getName();
+    unop->expr->accept(this);
+    auto lhs = getTopOperand();
+    try {
+        op_stack.emplace(codeGen->genUnaryOperator(op,lhs));
+    }
+    catch( std::exception& e )
+    {
+        throw std::runtime_error( getRowCol(unop) + e.what() );
+    }
+}
+
 void CompilerVisitor::visit(tree::Objective* obj)
 {
     try {

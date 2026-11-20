@@ -435,6 +435,21 @@ std::unordered_set<std::string> initialized_structs;
 
         if ( t1.type == Type::struct_t && t2.type == Type::initializer_list ) return t1;
 
-        throw std::runtime_error("Unexpected Operation Triplet - ["+typeToStr(t1) + op + typeToStr(t2) +"]");
+        throw std::runtime_error("Unexpected Operation Triplet - ["+typeToStr(t1) + " " + op + " " + typeToStr(t2) +"]");
+    }
+
+    bool hasOperation(const std::string& op,const Type& t1)
+    {
+        auto it = Type::builtin_unary_operation_table.find({op,t1});
+        if (it != Type::builtin_unary_operation_table.end()) return true;
+        return false;
+    }
+
+    Type getOperationResult(const std::string& op,const Type& t1)
+    {
+        auto it =  Type::builtin_unary_operation_table.find({op,t1});
+        if ( it != Type::builtin_unary_operation_table.end() ) return it->second;
+
+        throw std::runtime_error("Unexpected Operation Duplet - [ "+op +" " + typeToStr(t1) +" ]");
     }
 };

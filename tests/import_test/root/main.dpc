@@ -1,6 +1,4 @@
-import "../root_level.dpc"
-
 def ango()
 {
-    let a : minecraft:alpha = { 1 }
+    let x = 5
 }
