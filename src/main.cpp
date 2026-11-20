@@ -201,7 +201,7 @@ int start(int argc,char ** argv)
 
     for ( auto & [ path,ast ] : *(ast_builder.getProcFiles()) )
     {
-        std::cout<<"Compiling File...:\n   "<<path<<"\n";
+        std::cout<<"Compiling File...:\n   "<<fs::relative(path)<<"\n";
         build_files = compile(ast.ast,ast_builder.getProcFiles(),target,build_files);
         std::cout<<"\n";
     }
