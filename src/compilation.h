@@ -107,6 +107,7 @@ struct Function
 
 };
 
+
 struct FunctionDeclaration
 {
     std::string minecraft_name;
@@ -126,7 +127,7 @@ struct InlinedFunctionDeclaration
     InlinedFunctionDeclaration(const std::string& m_name) : minecraft_name(m_name) {}
 };
 
-struct StorageDeclaration
+struct StorageDefinition
 {
     std::vector<std::string> field_names;
     std::unordered_map<std::string,Type> fields;
@@ -148,10 +149,14 @@ private:
 
     std::unordered_map<std::string,std::string> registered_objectives;
     
+    
     std::unordered_map<std::string,InlinedFunctionDeclaration> declared_inlined_functions;
+    
     std::unordered_map<std::string,FunctionDeclaration> declared_functions;
-    std::unordered_map<std::string,StorageDeclaration > declared_storages;
+    
+    std::unordered_map<std::string,StorageDefinition > declared_storages;
 
+    
     std::unordered_map<std::string,Type> str_to_type;
     
     std::unordered_map<Type,std::string> type_to_str;
@@ -160,9 +165,6 @@ private:
 
     static int types_counter;
 public:
-    
-std::unordered_set<std::string> initialized_structs;
-
     IterableStack<std::unordered_map<std::string,Symbol>> symbols;
     IterableStack<std::string> while_break_stack;
     size_t tempVarNumber = 0;
@@ -196,6 +198,11 @@ std::unordered_set<std::string> initialized_structs;
         tick_file->println(line);
     }
 
+    const auto& getTypes()
+    {
+        return declared_types;
+    }
+
     bool isBadName(const std::string& name)
     {
         if ( name.contains(":") ) return false;
@@ -217,9 +224,27 @@ std::unordered_set<std::string> initialized_structs;
     std::string resolveTypeName(const std::string& name) const
     {
         if ( Type::hasType(name) ) return name;
+
         if ( !name.contains(":") ) return currentDefinedNamespace.toMinecraftPath()+name;
         return name;
     }
+
+
+    void pushType(const std::string& name)
+    {
+        declared_types.emplace(name);
+    }
+
+    auto & get_member_str_to_type()
+    {
+        return str_to_type;
+    }
+
+    auto& get_member_type_to_str()
+    {
+        return type_to_str;
+    }
+
 
     bool registerType(const std::string& name)
     {
@@ -319,6 +344,13 @@ std::unordered_set<std::string> initialized_structs;
     }
     void registerVar(const std::string&,const Symbol&);
 
+
+    auto& getFuncDeclarations()
+    {
+        return declared_functions;
+    }
+
+
     bool registerFunc(const std::string& func_name,FunctionDeclaration&& funcDecl)
     {
         auto name = resolveName(func_name);
@@ -335,6 +367,12 @@ std::unordered_set<std::string> initialized_structs;
     {
         auto name = resolveName(func_name);
         return declared_functions.at(name);
+    }
+
+
+    auto& getInlinedDeclarations()
+    {
+        return declared_inlined_functions;
     }
 
     bool registerInlined(const std::string& func_name,InlinedFunctionDeclaration&& funcDecl)
@@ -372,14 +410,6 @@ std::unordered_set<std::string> initialized_structs;
         return registered_objectives.contains(name);
     }
 
-    bool registerStorage(const std::string& stor_name,StorageDeclaration&& storageDecl)
-    {
-        auto name = resolveTypeName(stor_name);
-        if ( declared_functions.contains(name) ) return false;
-        declared_storages[name] = std::move(storageDecl);
-        return true;
-    }
-
     const std::string& getObjective(const std::string& obj_name)
     {
         auto name = resolveTypeName(obj_name);
@@ -388,6 +418,19 @@ std::unordered_set<std::string> initialized_structs;
         return it->second;
     } 
 
+
+    auto& getStorageDeclarations()
+    {
+        return declared_storages;
+    }
+
+    bool registerStorage(const std::string& stor_name,StorageDefinition&& storageDecl)
+    {
+        auto name = resolveTypeName(stor_name);
+        if ( declared_functions.contains(name) ) return false;
+        declared_storages[name] = std::move(storageDecl);
+        return true;
+    }
 
     bool hasStorage(const std::string& name) const
     {
@@ -399,14 +442,14 @@ std::unordered_set<std::string> initialized_structs;
         return declared_storages.contains(name);
     }
 
-    StorageDeclaration& getStorageDecl(const std::string& stor_name)
+    StorageDefinition& getStorageDecl(const std::string& stor_name)
     {
         auto name = resolveTypeName(stor_name);
         if ( declared_storages.contains(name) ) return declared_storages.at(name);
         else throw std::runtime_error("Unknown string "+ name + " while trying to converse it to StorageDecl ");
     }
     
-    StorageDeclaration& getStorageDecl(const Type& type)
+    StorageDefinition& getStorageDecl(const Type& type)
     {
         auto name = resolveTypeName(typeToStr(type));
         return getStorageDecl(name);
