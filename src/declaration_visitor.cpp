@@ -6,47 +6,50 @@
 #include"tree/objective.h"
 #include"tree/import.h"
 
-void StorageDeclVisitor::visit(tree::Import* imp)
-{
-    auto& path = imp->file_name;
-    
-    if ( visited_import.contains(path) ) return;
 
-    visited_import.insert(path);
 
-    auto it = modules->find(path);
-
-    auto old_namesp = fileCtx->currentNamespace;
-
-    auto old_def_nmsp = fileCtx->currentDefinedNamespace;
-
-    fileCtx->currentNamespace = fileCtx->currentDefinedNamespace = {"minecraft"};
-
-    if ( it == modules->end() )
-        throw std::runtime_error( imp->getRowCol() + " Unexpected file name: " + fs::relative(path).generic_string()+"\n    "+path.string());
-    
-    for ( auto & node : it->second.ast )
-    {
-        node->accept(this);
-    }
-
-    fileCtx->currentNamespace = old_namesp;
-    fileCtx->currentDefinedNamespace = old_def_nmsp;
-}
-
-void StorageDeclVisitor::visit(tree::StorageDecl* storage_decl)
+void ForwardStorageDeclaration::visit(tree::StorageDecl* storage_decl)
 {
     if ( !fileCtx->registerType(storage_decl->getName()) )
         throw std::runtime_error(storage_decl->getRowCol()+" Redefinition of type: '" + storage_decl->getName() + "' on line: " + storage_decl->getName() + " in row: " + storage_decl->getName() + " this type name is declared yet");
 }
 
-void StorageDeclVisitor::visit(tree::Objective* obj)
+void ForwardStorageDeclaration::visit(tree::Objective* obj)
 {
     if ( !fileCtx->registerObjective(obj->name) )
         throw std::runtime_error(obj->getRowCol() + "  Redifinitaion of objective '"+obj->name+"'" );
 }
 
-Value FuncDeclVisitor::declArg(tree::VarDecl* varDecl)
+void RecursiveStorageDeclaration::visit(tree::Import* imp)
+{
+    auto& file = imp->file_name;
+    if ( isImported(file) ) return;
+
+    visited_import.emplace(file);
+
+    for ( auto& type : modules->at(file).fileCtx->getTypes() )
+    {
+        fileCtx->pushType(type);
+    }
+
+    for ( auto& type : modules->at(file).fileCtx->get_member_str_to_type() )
+    {
+        fileCtx->get_member_str_to_type().emplace(type);
+    }
+
+    for ( auto& type : modules->at(file).fileCtx->get_member_type_to_str() )
+    {
+        fileCtx->get_member_type_to_str().emplace(type);
+    }
+
+    for ( auto& node : modules->at(file).ast )
+    {
+        node->accept(this);
+    }
+}
+
+
+Value ForwardDefiner::declArg(tree::VarDecl* varDecl)
 {
     Type type = fileCtx->strToType(varDecl->getVarType());
 
@@ -59,32 +62,7 @@ Value FuncDeclVisitor::declArg(tree::VarDecl* varDecl)
     return value;
 }
 
-void FuncDeclVisitor::visit(tree::Import* imp)
-{
-    auto& path = imp->file_name;
-    if ( visited_import.contains(path) ) return;
-
-    visited_import.insert(path);
-
-    auto it = modules->find(path);
-
-    auto old_namesp = fileCtx->currentNamespace;
-
-    auto old_def_nmsp = fileCtx->currentDefinedNamespace;
-
-    fileCtx->currentNamespace = fileCtx->currentDefinedNamespace = {"minecraft"};
-
-    if ( it == modules->end() ) throw std::runtime_error( imp->getRowCol() + "Unexpected file name: " + fs::relative(path).generic_string());
-    for ( auto & node : it->second.ast )
-    {
-        node->accept(this);
-    }
-
-    fileCtx->currentNamespace = old_namesp;
-    fileCtx->currentDefinedNamespace = old_def_nmsp;
-}
-
-FunctionDeclaration FuncDeclVisitor::makeFuncDecl(tree::Function* func)
+FunctionDeclaration ForwardDefiner::makeFuncDecl(tree::Function* func)
 {
     auto name = func->getName();
     fileCtx->newFunction(name);
@@ -119,7 +97,7 @@ FunctionDeclaration FuncDeclVisitor::makeFuncDecl(tree::Function* func)
     return func_decl;
 }
 
-void FuncDeclVisitor::visit(tree::Function* func)
+void ForwardDefiner::visit(tree::Function* func)
 {
     try{
         auto func_decl = makeFuncDecl(func);
@@ -138,7 +116,7 @@ void FuncDeclVisitor::visit(tree::Function* func)
     }
 }
 
-InlinedFunctionDeclaration FuncDeclVisitor::makeInlinedFuncDecl(tree::InlinedFunction* func)
+InlinedFunctionDeclaration ForwardDefiner::makeInlinedFuncDecl(tree::InlinedFunction* func)
 {
     auto name = func->getName();
     fileCtx->newFunction(name);
@@ -160,21 +138,20 @@ InlinedFunctionDeclaration FuncDeclVisitor::makeInlinedFuncDecl(tree::InlinedFun
     return func_decl;
 }
 
-void FuncDeclVisitor::visit(tree::InlinedFunction* func)
+void ForwardDefiner::visit(tree::InlinedFunction* func)
 {
-    //std::cout<<getRowCol(func)<<" DECLARATING INLINE '"+func->getName()+"'\n";
+    //std::cout<<->getRowCol()func)<<" DECLARATING INLINE '"+func->getName()+"'\n";
     auto&& val = makeInlinedFuncDecl(func);
     if ( !fileCtx->registerInlined(func->getName(),std::move(val) ) )
         throw std::runtime_error(func->getRowCol()+" Redifinition of callable name '"+func->getName()+"'");
 }
 
-void FuncDeclVisitor::visit(tree::StorageDecl* storage_decl)
+void ForwardDefiner::visit(tree::StorageDecl* storage_decl)
 {
     auto& storage_name = storage_decl->getName();
     if ( fileCtx->hasType( storage_name ) )
     {
-
-        StorageDeclaration storageDecl;
+        StorageDefinition storageDecl;
         for ( auto & field : storage_decl->fields )
         {
             auto& name = field->var_name;
@@ -182,8 +159,8 @@ void FuncDeclVisitor::visit(tree::StorageDecl* storage_decl)
             auto type = fileCtx->strToType(type_name);
             type.list_depth = field->list_depth;
 
-            if ( storageDecl.fields.contains(name) ) throw std::runtime_error( storage_decl->getRowCol() + " Redefinition of field in storage '"+storage_name+"'");
-
+            if ( storageDecl.fields.contains(name) ) throw std::runtime_error( storage_decl->getRowCol()+"Redefinition of field in storage '"+storage_name+"'");
+            
             storageDecl.field_names.emplace_back(name);
             storageDecl.fields.emplace(name,type);
         }
@@ -212,5 +189,35 @@ void FuncDeclVisitor::visit(tree::StorageDecl* storage_decl)
             fileCtx->currentNamespace.pop();
         }
         fileCtx->registerStorage(storage_name,std::move(storageDecl));
+    }
+}
+
+void RecursiveDefiner::visit(tree::Import* imp)
+{
+    auto& file = imp->file_name;
+    if ( isImported(file) ) return;
+
+    visited_import.emplace(file);
+
+    for ( auto& [name,decl] : modules->at(file).fileCtx->getFuncDeclarations() )
+    {
+        fileCtx->getFuncDeclarations().emplace(name,decl);
+    }
+
+    for ( auto& [name,decl] : modules->at(file).fileCtx->getInlinedDeclarations() )
+    {
+        fileCtx->getInlinedDeclarations().emplace(name,decl);
+    }
+
+    for ( auto& [name,decl] : modules->at(file).fileCtx->getStorageDeclarations() )
+    {
+        fileCtx->getStorageDeclarations().emplace(name,decl);
+    }
+
+
+
+    for ( auto& node : modules->at(file).ast )
+    {
+        node->accept(this);
     }
 }

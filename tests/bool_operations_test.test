@@ -9,7 +9,14 @@
 # T1. && литерал+литерал (fold, без scoreboard-команд)
 # ───────────────────────────────────────────────────────────────────────
 
-namespace tests
+namespace tests:bool
+
+import "storages.test"
+
+def sss(a : tests:custom)
+{
+    raw say 15
+}
 
 def test_and_literals()
 {

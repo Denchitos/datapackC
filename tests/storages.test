@@ -1,5 +1,7 @@
 #пример
 
+import "bool_operations_test.test"
+
 namespace tests
 
 storage custom 

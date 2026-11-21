@@ -86,6 +86,12 @@ std::string Function::toDotPath() const
     return nmsp.toDotPath()+'.'+name;
 }
 
+/// FILE_COMPILATION_CONTEXT ///
+/// FILE_COMPILATION_CONTEXT ///
+/// FILE_COMPILATION_CONTEXT ///
+/// FILE_COMPILATION_CONTEXT ///
+/// FILE_COMPILATION_CONTEXT ///
+
 int FileCompilationContext::types_counter = 0;
 
 FileCompilationContext::FileCompilationContext()
