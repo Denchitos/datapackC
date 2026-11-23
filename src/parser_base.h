@@ -48,6 +48,11 @@ public:
     }
 protected:
 
+    T& getToken(id i)
+    {
+        return stream[i];
+    }
+
     id current() const 
     {
         return i;

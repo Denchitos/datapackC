@@ -56,15 +56,19 @@ tree::NodePtr Parser::parseImport()
         return nullptr;
     }
 
-    if ( !expect(Token::Literal,"Importing file must be a literal") )
+    auto i = current()-1;
+    std::string str_path;
+    while ( !match(Token::EL) )
     {
-        statementPanic();
-        return nullptr;
+        str_path.append(look().tok);
+        next();
     }
 
-    fs::path specified_file = look(-1).tok;
+    fs::path specified_file = str_path;
 
-    auto imp = std::make_unique<tree::Import>(look(-2));
+    if ( !specified_file.has_extension() ) specified_file.replace_extension("dpc");
+
+    auto imp = std::make_unique<tree::Import>(getToken(i));
 
     if ( specified_file.is_absolute() )
     {
@@ -74,8 +78,6 @@ tree::NodePtr Parser::parseImport()
         auto abs_name = currentFile.parent_path()/specified_file;
         imp->file_name = fs::weakly_canonical(abs_name);
     }
-
-    match(Token::EL);
 
     return imp;
 }

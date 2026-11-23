@@ -137,7 +137,7 @@ public:
             std::cout<<Success("=Project compiled succesfully=\n");
         else
             std::cout<<Error("=Project compiled with ERRORS=\n");
-        std::cout<<Info("Exit Code: ")<<res<<"\n";
+        std::cout<<Info("Exit Code: ")<<"\033[33m"<<res<<"\033[0m\n";
         return res;
     }
 
