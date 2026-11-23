@@ -98,6 +98,7 @@ datapack/
 ## **objective**
 
 ---
+( objective временно не работает )
 
 objective - ключевое слово, которое указывает создать scoreboard в *Minecraft*
 
