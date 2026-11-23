@@ -349,8 +349,6 @@ public:
     {
         return declared_functions;
     }
-
-
     bool registerFunc(const std::string& func_name,FunctionDeclaration&& funcDecl)
     {
         auto name = resolveName(func_name);
@@ -394,11 +392,21 @@ public:
         return declared_inlined_functions.at(name);
     }
 
+    const auto& getObjectives()
+    {
+        return registered_objectives;
+    }
+
+    bool putObjective(const std::string& obj_lvalue,const std::string& obj_name)
+    {
+        if ( registered_objectives.contains(obj_lvalue) ) return true;
+        registered_objectives[obj_lvalue] = obj_name;
+        return true;
+    }
+
     bool registerObjective(const std::string& obj_name)
     {
-        std::cout<<"registered objective:\n";
         auto name = resolveName(obj_name);
-        std::cout<<name<<"\n";
         if ( registered_objectives.contains(name) ) return false;
         registered_objectives[name] = currentNamespace.toDotPath()+'.'+obj_name;
         return true;
@@ -412,7 +420,7 @@ public:
 
     const std::string& getObjective(const std::string& obj_name)
     {
-        auto name = resolveTypeName(obj_name);
+        auto name = resolveName(obj_name);
         auto it = registered_objectives.find(name);
         if ( it == registered_objectives.end() ) throw std::runtime_error("Unknown objective '"+name+"'");
         return it->second;

@@ -27,6 +27,7 @@ public:
 class RecursiveStorageDeclaration : public SupportVisitor
 {
     std::unordered_set<fs::path> visited_import;
+    fs::path path;
 public:
 
     bool isImported(const fs::path& path)
@@ -34,7 +35,7 @@ public:
         return visited_import.contains(path);
     }
 
-    RecursiveStorageDeclaration(const fs::path& path,std::shared_ptr<FileCompilationContext> ctx,std::shared_ptr<Modules> modules) : SupportVisitor(ctx,modules)
+    RecursiveStorageDeclaration(const fs::path& path,std::shared_ptr<FileCompilationContext> ctx,std::shared_ptr<Modules> modules) : SupportVisitor(ctx,modules), path(path)
     {
         visited_import.emplace(path);
     }
