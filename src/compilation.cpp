@@ -167,7 +167,7 @@ std::vector<std::string> FileCompilationContext::nameMangle(const Type& type,con
     {
         return {"."+currentFunction().toDotPath()+'.'+name,"local"};
     }
-    if ( type.type==Type::int_t || type.type == Type::float_t || type.type == Type::bool_t || type.type == Type::string || type.type == Type::struct_t )
+    if ( Type::isNbtLike(type) )
     {
         return { "storage",currentFunction().toMinecraftPath(),name };
     }
@@ -181,7 +181,7 @@ std::vector<std::string> FileCompilationContext::nameMangle(Function& func,const
     {
         return {"."+func.toDotPath()+'.'+name,"local"};
     }
-    if ( type.type==Type::int_t || type.type == Type::float_t || type.type == Type::bool_t || type.type == Type::string )
+    if ( Type::isNbtLike(type) )
     {
         return { "storage",func.toMinecraftPath(),name };
     }
