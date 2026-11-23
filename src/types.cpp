@@ -35,6 +35,7 @@ std::unordered_map<std::string,Type> Type::str_to_kind
     { "string",Type::string},
     { "void",Type::void_t },
     { "initializer_list",Type::initializer_list },
+    { "nbt",Type::nbt },
 };
 
 std::unordered_map<Type,std::string> Type::type_to_str{
@@ -52,6 +53,7 @@ std::unordered_map<Type,std::string> Type::type_to_str{
     { Type::string,"string" },
     { Type::void_t,"void" },
     { Type::initializer_list,"initializer_list" },
+    {Type::nbt,"nbt"},
 };
 
 std::size_t std::hash<Type>::operator()(const Type& t) const
@@ -181,4 +183,10 @@ std::unordered_map<OperationTriplet,Type> Type::builtin_operation_table
     
     {{"=",Type::int_t,Type::numberLiteral},Type::int_t},
     {{"=",Type::int_t,Type::int_t},Type::int_t},
+
+    {{"=",Type::nbt,Type::int_t},Type::nbt},
+    {{"=",Type::nbt,Type::string},Type::nbt},
+    {{"=",Type::nbt,Type::float_t},Type::nbt},
+    {{"=",Type::nbt,Type::bool_t},Type::nbt},
+    {{"=",Type::nbt,Type::nbt},Type::nbt},
 };

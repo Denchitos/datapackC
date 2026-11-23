@@ -217,6 +217,11 @@ static std::unordered_map<std::pair<Type,Type>,operator_form>  genAssign_map{
         fileCtx->println("data modify "+lhs.to_string() + " set from " + rhs.to_string() );
         return lhs;
     }},
+    { { Type::nbt,Type::nbt },[](FileCompilationContext* fileCtx,const Value& lhs,const Value& rhs) -> Value
+    {
+        fileCtx->println("data modify "+lhs.to_string() + " set from " + rhs.to_string() );
+        return lhs;
+    }},
     { {Type::struct_t,Type::struct_t},[](FileCompilationContext* fileCtx,const Value& lhs,const Value& rhs) -> Value
     {
         if ( lhs.type != rhs.type ) throw std::runtime_error( "Unexpected situation in assigning two structures; got different types" );
@@ -286,8 +291,8 @@ static Value genAssignStatic(FileCompilationContext* fileCtx,const  Value& lhs,c
 {
 
     std::pair<Type,Type> pair;
-
-    if ( ( lhs.type.type == Type::struct_t ) && (lhs.type == rhs.type) ) {  pair = { Type::struct_t,Type::struct_t }; }
+    if ( lhs.type.type == Type::nbt && Type::isNbtLike(rhs.type) && lhs.type.list_depth <= rhs.type.list_depth ) { pair = { Type::nbt,Type::nbt }; }
+    else if ( ( lhs.type.type == Type::struct_t ) && (lhs.type == rhs.type) ) {  pair = { Type::struct_t,Type::struct_t }; }
     else if ( ( lhs.type.type == Type::struct_t ) && ( rhs.type.type == Type::initializer_list) ) {  pair = { Type::struct_t,Type::initializer_list }; }
     else pair = { lhs.type,rhs.type };
     

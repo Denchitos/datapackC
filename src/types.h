@@ -34,7 +34,7 @@ struct Type
         void_t,
         auto_t,score,score_bool,selector,
         numberLiteral,boolLiteral,rawSelector,textLiteral,
-        int_t,float_t,bool_t,string,
+        int_t,float_t,bool_t,string,nbt,
         struct_t,
         initializer_list
     };
@@ -81,6 +81,22 @@ struct Type
     {
         return type_to_str.contains(type);
     }
+
+    bool static isNbtLike(const Type& type)
+    {
+        switch (type.type)
+        {
+            case Type::int_t:
+            case Type::float_t:
+            case Type::string:
+            case Type::bool_t:
+            case Type::struct_t:
+            case Type::nbt:
+                return true;
+            default : return false;
+        }
+    }
+
 private:
     static std::unordered_map<std::string,Type> str_to_kind;
     static std::unordered_map<Type,std::string> type_to_str;
