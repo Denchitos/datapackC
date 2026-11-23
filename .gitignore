@@ -1,6 +1,7 @@
 datapack/
 .vscode/
 /text.test
+/other
 build/
 /build.bat
 Tasks/

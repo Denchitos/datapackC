@@ -9,7 +9,7 @@
 # T1. && литерал+литерал (fold, без scoreboard-команд)
 # ───────────────────────────────────────────────────────────────────────
 
-namespace tests:bool
+namespace tests:bools
 
 import "storages.test"
 

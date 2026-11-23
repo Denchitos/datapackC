@@ -105,7 +105,7 @@ public:
         //printProcFiles();
         if (!recursiveStorageDecl()) return getRet();
         //printProcFiles();
-        
+        returnChecking();
         if (!forwardDefining()) return getRet();
         //printProcFiles();
         
@@ -162,7 +162,7 @@ public:
         bool result = true;
         for (auto & [ path, file] : *modules )
         {
-            std::cout<<"\tFile: "<<fs::relative(path).generic_string()<<"\n";
+            std::cout<<"\t"<<fs::relative(path).generic_string()<<"\n";
             auto ctx = std::make_shared<FileCompilationContext>();
 
             ctx->currentNamespace = file.nmsp;
@@ -348,6 +348,19 @@ private:
     }
 
 public:
+
+    void returnChecking()
+    {
+        ReturnChecker retChecker;
+        for ( auto& [path,file] : *modules  )
+        {
+            for ( auto& node : file.ast )
+            {
+                node->accept(&retChecker);
+            }
+        }
+    }
+
 
     bool compilingStage()
     {
