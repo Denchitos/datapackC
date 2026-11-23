@@ -13,6 +13,14 @@
 #include"ast_builder.h"
 #include<algorithm>
 
+//const auto Error = "[ERROR]";
+
+#define Error(s) "\033[31m"<<s<<"\033[0m"
+
+#define Info(s) "\033[36m"<<s<<"\033[0m"
+
+#define Success(s) "\033[32m"<<s<<"\033[0m"
+
 struct Settings
 {
     std::string target = "datapack";
@@ -65,6 +73,8 @@ inline int BAD_FORWARD_DEF = 5;
 inline int BAD_RECURSIVE_DEF = 6;
 inline int BAD_COMPILING = 7;
 inline int OBJECTS_COLLISION = 8;
+inline int RECURSION_DETECTED = 9;
+inline int BAD_CALL_TREE = 10;
 
 struct Object
 {
@@ -112,6 +122,8 @@ public:
         if (!recursiveDefining()) return getRet();
         //printProcFiles();
         
+        if ( !recursionChecking() ) return getRet(); 
+
         if ( !compilingStage() ) return getRet();
         //printProcFiles();
         codeGenStage();
@@ -122,15 +134,16 @@ public:
     int getRet()
     {
         if ( res == 0 )
-            std::cout<<"=Project compiled succesfully=\n";
+            std::cout<<Success("=Project compiled succesfully=\n");
         else
-            std::cout<<"=Project compiled with ERRORS=\n";
+            std::cout<<Error("=Project compiled with ERRORS=\n");
+        std::cout<<Info("Exit Code: ")<<res<<"\n";
         return res;
     }
 
     bool buildStage()
     {
-        std::cout<<"[Building Project Stage]\n";
+        std::cout<<Info("[Building Project Stage]\n");
 
         ast_builder->pushCandidate(settings.root_file);
 
@@ -145,20 +158,21 @@ public:
             if ( !ast_builder->buildFile(candidate.value()) ) ast_building_success = false;
         }
 
-        std::cout<<"[AST BUILDING FINISHED]\n";
-
         if ( !ast_building_success )
         {
-            std::cerr<<"While build AST, Compiler got errors. Compilation stage is unavavilable\n";
+            std::cerr<<Error("While build AST, Compiler got errors. Compilation stage is unavavilable\n");
             res = BAD_BUILD;
             return false;
         }
+
+        std::cout<<Success("[AST BUILDING FINISHED]\n");
+
         return true;
     }
 
     bool forwardDeclaringStorages()
     {
-        std::cout<<"[Forward Declaration Stage]\n";
+        std::cout<<Info("[Forward Declaration Stage]\n");
         bool result = true;
         for (auto & [ path, file] : *modules )
         {
@@ -178,7 +192,7 @@ public:
                 }    
             }
             catch ( std::exception& e ){
-                std::cerr<<"[ERROR]"<<" "<< fs::relative(path) <<"\n\t"<<e.what()<<"\n";
+                std::cerr<<Error("[ERROR]")<<" "<< fs::relative(path) <<"\n\t"<<e.what()<<"\n";
                 result = false;
                 res = BAD_FORWARD_DECL;
             }
@@ -192,7 +206,7 @@ public:
 
     bool recursiveStorageDecl()
     {
-        std::cout<<"[Recursive Declaration Stage]\n";
+        std::cout<<Info("[Recursive Declaration Stage]\n");
         bool result = true;
         for (auto & [ path, file] : *modules )
         {
@@ -206,7 +220,7 @@ public:
                 }    
             }
             catch ( std::exception& e ){
-                std::cerr<<"[ERROR]"<<" "<< fs::relative(path) <<"\n\t"<<e.what()<<"\n";
+                std::cerr<<Error("[ERROR]")<<" "<< fs::relative(path) <<"\n\t"<<e.what()<<"\n";
                 result = false;
                 res = BAD_RECURSIVE_DECL;
             }
@@ -217,7 +231,7 @@ public:
 
     bool forwardDefining()
     {
-        std::cout<<"[Forward Defining Stage]\n";
+        std::cout<<Info("[Forward Defining Stage]\n");
         bool result = true;
         for (auto & [ path, file] : *modules )
         {
@@ -233,7 +247,7 @@ public:
                 }    
             }
             catch ( std::exception& e ){
-                std::cerr<<"[ERROR]"<<" "<< fs::relative(path) <<"\n\t"<<e.what()<<"\n";
+                std::cerr<<Error("[ERROR]")<<" "<< fs::relative(path) <<"\n\t"<<e.what()<<"\n";
                 result = false;
                 res = BAD_FORWARD_DEF;
             }
@@ -244,7 +258,7 @@ public:
 
     bool recursiveDefining()
     {
-        std::cout<<"[Recursive Defining Stage]\n";
+        std::cout<<Info("[Recursive Defining Stage]\n");
         bool result = true;
         for (auto & [ path, file] : *modules )
         {
@@ -258,7 +272,7 @@ public:
                 }    
             }
             catch ( std::exception& e ){
-                std::cerr<<"[ERROR]"<<" "<< fs::relative(path) <<"\n\t"<<e.what()<<"\n";
+                std::cerr<<Error("[ERROR]")<<" "<< fs::relative(path) <<"\n\t"<<e.what()<<"\n";
                 result = false;
                 res = BAD_RECURSIVE_DECL;
             }
@@ -281,8 +295,8 @@ private:
             }
         }
         catch ( std::exception& e ){
-            std::cerr<<"[ERROR]"<<" "<< fs::relative(path) <<"\n\t"<<e.what()<<"\n";
-            std::cout<<"Finished With Errors\n";
+            std::cerr<<Error("[ERROR]")<<" "<< fs::relative(path) <<"\n\t"<<e.what()<<"\n";
+            std::cout<<Error("Finished With Errors\n");
             res = BAD_COMPILING;
             return false;
         }
@@ -297,7 +311,7 @@ private:
 
             if ( it != compiled_objects.end() )
             {
-                std::cerr<<"[ERROR] Object Names Collision:\n"<<
+                std::cerr<<Error("[ERROR]")<<"Object Names Collision:\n"<<
                     "\t"<<"Object: "<<file_path.generic_string()<<"\n\t\tfrom source file: "<<path<<"\n"<<
                     "\t"<<"Is collising with: " << it->first.generic_string() <<"\n"<<
                     "\t\t"<<"from source file: "<< it->second.source<<"\n";
@@ -361,10 +375,49 @@ public:
         }
     }
 
+    bool recursionChecking()
+    {
+        std::cout<<Info("[Checking for recursion]\n");
+        auto result = true;
+        CallTreeBuilder recChecker(nullptr);
+        for ( auto& [path,file] : *modules )
+        {
+            std::cout<<"\t"<<path.generic_string()<<"\n";
+            recChecker.setFileCtx(file.fileCtx);
+            try {
+                for ( auto& it : file.ast ) 
+                {
+                    it->accept(&recChecker);
+                }
+            }
+            catch ( std::exception& e)
+            {
+                std::cerr<<Error("[ERROR]")<<" "<< fs::relative(path) <<"\n\t"<<e.what()<<"\n";
+                res = BAD_CALL_TREE;
+                result = false;
+            }
+        }
+
+        auto rec = recChecker.findRecursion();
+        if ( rec.empty() ) return result;
+
+        result = false;
+        res = RECURSION_DETECTED;
+        std::cout<<Error("[ERROR]")<<" Detected Recursion:" << "\n";
+
+        for ( auto& it : rec )
+        {
+            std::cout<<it<<"\n";
+        }
+    
+
+        return result;
+    }
+
 
     bool compilingStage()
     {
-        std::cout<<"[Compiling Stage]\n";
+        std::cout<<Info("[Compiling Stage]\n");
         bool result = true;
         for (auto& [_,file] : *modules)
         {

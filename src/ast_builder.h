@@ -34,7 +34,7 @@ class FilesASTBuilder : public EmptyVisitor
 
         if ( !file.is_open())
         {
-            return std::unexpected("Файл "+path.generic_string()+" не найден. Был импортирован из "+fs::relative(current_file).generic_string());
+            return std::unexpected("File \033[33m"+fs::relative(path).generic_string()+"\033[0m can not be open.\n\t It was imported from: \033[33m"+fs::relative(current_file).generic_string()+"\033[0m\n");
         }
 
         std::string line;
@@ -100,9 +100,9 @@ public:
 
         auto read = readFile(path);
         
-        if ( !read.has_value() )
+        if ( !read )
         {
-            std::cerr<<read.error();
+            std::cerr<<"\t"<<read.error();
             return false;
         }
 
