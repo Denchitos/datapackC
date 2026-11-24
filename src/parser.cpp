@@ -349,7 +349,7 @@ std::optional<tree::Raw::Variant> Parser::parseRawItem()
             if ( !expect(Token::Number,"Expected Number after ':' in raw-emplacement after value") ) return std::nullopt;
             id = static_cast<char>(std::stoi(look(-1).tok));
         }
-        return tree::Raw::Var(std::move(expr),id);
+        return tree::Raw::Var(is_literal,std::move(expr),id);
     }
 }
 
