@@ -305,34 +305,90 @@ tree::BlockPtr Parser::parseRawBlock()
     return block;
 }
 
+std::optional<tree::Raw::Variant> Parser::parseRawItem()
+{
+    enum class type
+    {
+        var, //func - later
+    };
+    bool is_literal;
+    type t = type::var;
+
+    if ( compare(Token::Word) )
+    {
+        auto& word = look().tok;
+        if ( word == "text" ) is_literal = true;
+        else error("Unexpected word "+word);
+        next(); 
+    }
+
+    if (!expect(Token::Colon,"Expected Colon while parsing raw-emplacement ( after literal-questioning )"))
+    {
+        return std::nullopt;
+    };
+
+    if ( compare(Token::Word) )
+    {
+        auto& word = look().tok;
+        if ( word == "var" ) t = type::var;
+        else error("Unexpected word "+word);
+        next(); 
+    }
+
+    if (!expect(Token::Colon,"Expected Colon while parsing raw-emplacement ( after type )"))
+    {
+        return std::nullopt;
+    };
+
+    if ( t == type::var )
+    {
+        auto expr = parseTerm();
+        char id = -1;
+        if ( match(Token::Colon) )
+        {
+            if ( !expect(Token::Number,"Expected Number after ':' in raw-emplacement after value") ) return std::nullopt;
+            id = static_cast<char>(std::stoi(look(-1).tok));
+        }
+        return tree::Raw::Var(std::move(expr),id);
+    }
+}
+
 tree::RawPtr Parser::parseRawLine()
 {
     auto raw = std::make_unique<tree::Raw>(look(-1));
-    bool cont = true;  
-    while ( cont )
+    while ( true )
     {
         if ( match(Token::EL) ) break;
-        else if ( ( match(Token{"%",Token::Operator})) )
+        else if ( ( compare(Token{"%",Token::Operator})) && compare(Token::OParen) )
         {
-            bool space_before = look(-1).space_before;
-            bool is_literal = false;
-            int id = -1;
-            std::string word = "undefined";
-            if ( match(Token::Colon) ) is_literal = true;
-
-            if ( match(Token::Word) ) word = look(-1).tok;
-
-            if ( match(Token::Dot) )
+            bool sp_bef = look().space_before;
+            next(2);
+            auto it = parseRawItem();
+            if ( !it )
             {
-                if ( !expect(Token::Number,"after '.' in derefferencing exepcted a number. Example: %<var>.<param_id>%") ) {statementPanic(); return raw;}
-                id = std::stoi(look(-1).tok);
+                error("Error while parsing raw-emplacement");
+                while ( true )
+                {
+                    if ( match(Token::CParen) || match(Token::EL) ) break;
+                    next();
+                }
             }
-            //if ( is_literal ) std::cout<<"LITERAL DEREF\n";
-            raw->pushVar(std::move(word),id,is_literal,space_before);
-            if ( !expect(Token{"%",Token::Operator},"Every var derefferencing in raw block '% ... %' must be finished with % ") ) return raw;
+            else {
+                auto& x = *it;
+                raw->raw.emplace_back(x,sp_bef);
+                expect(Token::CParen,"Expected '(' that closes raw-emplacement");
+            }
         }
-        else {
-            raw->pushWord(look().trueString(),look().space_before);
+        else if ( compare(Token::Literal) )
+        {
+            tree::Raw::Literal literal = { look().row , look().col , look().tok };
+            raw->raw.emplace_back(literal,look().space_before);
+            next();
+        }
+        else
+        {
+            tree::Raw::Word word = { look().row , look().col , look().tok };
+            raw->raw.emplace_back(word,look().space_before);
             next();
         }
     }

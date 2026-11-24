@@ -50,6 +50,7 @@ public:
 
     std::vector<tree::VarDeclPtr> parseFunctionArg();
 
+    std::optional<tree::Raw::Variant> parseRawItem();
     tree::NodePtr parseRaw();
     tree::RawPtr parseRawLine();
     tree::BlockPtr parseRawBlock();

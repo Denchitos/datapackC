@@ -1,30 +1,47 @@
 #pragma once
 #include"node.h"
-
+#include<variant>
 TREE_BEGIN
+
+struct ExprNode;
 
 struct Raw : public Node
 {
-    enum Type
+    struct Emplace
     {
-        Word,
-        Var,
+        bool is_literal;
+        bool is_token;
     };
+
+    struct Var : public Emplace
+    {
+        std::unique_ptr<ExprNode> expr;
+        char id;
+    };
+
+    struct Func : public Emplace
+    {
+        std::string function;
+        std::string var_name;
+    };
+
+    struct Word
+    {
+        size_t r,c;
+        std::string tok;
+    };
+
+    struct Literal : public Word {};
+
+    using Variant = std::variant<Var,Word,Literal>;
 
     struct Item
     {
-        Type type;
-        std::string str;
-        char id;
-        bool is_literal;
+        Variant item;
         bool space_before;
     };
-
-    Raw(const Token& t);
+    Raw(const Token& t) : Node(t) {}
     std::vector<Item> raw;
-
-    void pushWord(const std::string& s,bool space_before);
-    void pushVar(const std::string & s,char id,bool is_literal,bool space_before);
 
     void accept(Visitor*) override;
 };
