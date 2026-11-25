@@ -47,7 +47,7 @@ class FilesASTBuilder : public EmptyVisitor
         return text;
     }
 
-    std::vector<tree::NodePtr> makeAST(std::string&& text,const fs::path& path)
+    auto makeAST(std::string&& text,const fs::path& path)
     {
         std::cout<<"LEXING... "<<fs::relative(path).generic_string()<<"\n";
 
@@ -59,7 +59,7 @@ class FilesASTBuilder : public EmptyVisitor
         parser->setCurrentFile(path);
         parser->setTokens(std::move(tokens));
 
-        return parser->parse();
+        return parser->parse(true);
     }
 
 public:
@@ -126,7 +126,9 @@ public:
         
         current_nmsp = std::nullopt;
 
-        for ( auto & it : ast )
+        if ( ast->nmsp ) ast->nmsp->accept(this);  
+
+        for ( auto & it : ast->imports )
         {
             it->accept(this);
         }
