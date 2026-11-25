@@ -24,11 +24,7 @@ void RecursiveStorageDeclaration::visit(tree::Import* imp)
 {
     auto& file = imp->file_name;
 
-    std::cout<<file<<" ? -";
-
-    if ( isImported(file) ) {std::cout <<"true\n"; return;}
-
-    std::cout<<"false\n";
+    if ( isImported(file) ) return;
 
     visited_import.emplace(file);
 
@@ -40,14 +36,6 @@ void RecursiveStorageDeclaration::visit(tree::Import* imp)
     for ( auto& type : modules->at(file).fileCtx->get_member_str_to_type() )
     {
         fileCtx->get_member_str_to_type().emplace(type);
-    }
-
-    std::cout<<"Current Path: "<<path<<"\n";
-    std::cout<<"Path: "<<file<<"\n";
-
-    for ( auto & [lval,name]: modules->at(file).fileCtx->getObjectives() )
-    {
-        std::cout<<"\t"<<lval<<"\t\t"<<name<<"\n";
     }
 
     for ( auto& [lval,name] : modules->at(file).fileCtx->getObjectives() )

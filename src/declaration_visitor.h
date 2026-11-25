@@ -57,7 +57,6 @@ public:
     void visit(tree::StorageDecl*) override;
 };
 
-
 class RecursiveDefiner : public SupportVisitor
 {
     std::unordered_set<fs::path> visited_import;

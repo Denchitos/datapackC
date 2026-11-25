@@ -203,12 +203,6 @@ public:
         return declared_types;
     }
 
-    bool isBadName(const std::string& name)
-    {
-        if ( name.contains(":") ) return false;
-        return true;
-    }
-
     bool hasType(const std::string& name)
     {
         auto type = resolveTypeName(name);
