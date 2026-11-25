@@ -6,6 +6,7 @@
 #include"tree/objective.h"
 #include"tree/import.h"
 
+#include "file_ast.h"
 
 
 void ForwardStorageDeclaration::visit(tree::StorageDecl* storage_decl)
@@ -49,7 +50,7 @@ void RecursiveStorageDeclaration::visit(tree::Import* imp)
         fileCtx->get_member_type_to_str().emplace(type);
     }
 
-    for ( auto& node : modules->at(file).ast )
+    for ( auto& node : modules->at(file).ast->imports )
     {
         node->accept(this);
     }
@@ -223,7 +224,7 @@ void RecursiveDefiner::visit(tree::Import* imp)
 
 
 
-    for ( auto& node : modules->at(file).ast )
+    for ( auto& node : modules->at(file).ast->imports )
     {
         node->accept(this);
     }

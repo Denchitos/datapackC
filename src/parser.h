@@ -39,7 +39,7 @@ public:
     void statementPanic();
 
     bool varDeclPanic();
-    std::unique_ptr<FileAST> parse(bool isGlobal);
+    std::unique_ptr<AST> parse(bool isGlobal);
 
     std::string parseName();
     tree::NodePtr parseImport();    

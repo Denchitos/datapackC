@@ -22,9 +22,9 @@ static void emplace_back(std::vector<tree::NodePtr>& ast,tree::NodePtr&& node)
     if ( node ) ast.emplace_back(std::move(node));
 }
 
-std::unique_ptr<FileAST> Parser::parse(bool isGlobal)
+std::unique_ptr<AST> Parser::parse(bool isGlobal)
 {
-    auto file_ast = std::make_unique<FileAST>();
+    auto file_ast = std::make_unique<AST>();
 
     while (!atEnd())
     {

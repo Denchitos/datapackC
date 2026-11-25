@@ -11,7 +11,7 @@ TREE_BEGIN
 struct Function : public Node
 {
     Function(const Token& tok);
-
+    bool is_static = false;
     BlockPtr body;
     std::vector<VarDeclPtr> args;
     
@@ -33,6 +33,7 @@ struct InlinedFunction : public Node
 {
     BlockPtr body;
     std::vector<VarDeclPtr> args;
+    bool is_static = false;
     InlinedFunction(const Token& tok) : Node(tok) {}
     InlinedFunction(const Token& tok,FunctionPtr&& function) : Node(tok){
         body = std::move(function->body);

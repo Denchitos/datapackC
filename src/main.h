@@ -186,10 +186,14 @@ public:
             
             try
             {
-                for ( auto& node : file.ast )
+                for ( auto& node : file.ast->storages )
                 {
                     node->accept(forward.get());
-                }    
+                }
+                for ( auto& node : file.ast->objectives )
+                {
+                    node->accept(forward.get());
+                } 
             }
             catch ( std::exception& e ){
                 std::cerr<<Error("[ERROR]")<<" "<< fs::relative(path) <<"\n\t"<<e.what()<<"\n";
@@ -214,10 +218,10 @@ public:
             auto recursive = std::make_unique<RecursiveStorageDeclaration>(path,file.fileCtx,modules);
             try
             {
-                for ( auto& node : file.ast )
+                for ( auto& node : file.ast->imports )
                 {
                     node->accept(recursive.get());
-                }    
+                }
             }
             catch ( std::exception& e ){
                 std::cerr<<Error("[ERROR]")<<" "<< fs::relative(path) <<"\n\t"<<e.what()<<"\n";
@@ -241,7 +245,15 @@ public:
             
             try
             {
-                for ( auto& node : file.ast )
+                for ( auto& node : file.ast->inlines )
+                {
+                    node->accept(recursive.get());
+                }
+                for ( auto& node : file.ast->functions)
+                {
+                    node->accept(recursive.get());
+                }
+                for ( auto& node : file.ast->storages )
                 {
                     node->accept(recursive.get());
                 }    
@@ -266,7 +278,7 @@ public:
             auto recursive = std::make_unique<RecursiveDefiner>(path,file.fileCtx,modules);
             try
             {
-                for ( auto& node : file.ast )
+                for ( auto& node : file.ast->imports )
                 {
                     node->accept(recursive.get());
                 }    
@@ -280,6 +292,27 @@ public:
         return result;
     }
 private:
+    void visit_all(Visitor* visitor,ProcessedFile& file)
+    {
+        for ( auto& node : file.ast->imports )
+        {
+            node->accept(visitor);
+        }
+        for ( auto& node : file.ast->storages)
+        {
+            node->accept(visitor);
+        }
+        for ( auto& node : file.ast->functions )
+        {
+            node->accept(visitor);
+        }
+        for ( auto& node : file.ast->inlines )
+        {
+            node->accept(visitor);
+        }
+
+    }
+
     bool compile(ProcessedFile& file)
     {
         auto& ctx = file.fileCtx;
@@ -289,10 +322,7 @@ private:
         auto compiler = std::make_unique<CompilerVisitor>(ctx,codeGen);
         try
         {
-            for ( auto& node : file.ast )
-            {
-                node->accept(compiler.get());
-            }
+            visit_all(compiler.get(),file);
         }
         catch ( std::exception& e ){
             std::cerr<<Error("[ERROR]")<<" "<< fs::relative(path) <<"\n\t"<<e.what()<<"\n";
@@ -368,10 +398,7 @@ public:
         ReturnChecker retChecker;
         for ( auto& [path,file] : *modules  )
         {
-            for ( auto& node : file.ast )
-            {
-                node->accept(&retChecker);
-            }
+            visit_all(&retChecker,file);
         }
     }
 
@@ -385,10 +412,7 @@ public:
             std::cout<<"\t"<<path.generic_string()<<"\n";
             recChecker.setFileCtx(file.fileCtx);
             try {
-                for ( auto& it : file.ast ) 
-                {
-                    it->accept(&recChecker);
-                }
+                visit_all(&recChecker,file);
             }
             catch ( std::exception& e)
             {
@@ -413,7 +437,6 @@ public:
 
         return result;
     }
-
 
     bool compilingStage()
     {

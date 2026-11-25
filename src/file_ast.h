@@ -1,7 +1,7 @@
 #include<vector>
 #include"tree/node.h"
 
-struct FileAST
+struct AST
 {
     tree::NodePtr nmsp = nullptr;
     std::vector<tree::NodePtr> imports;
