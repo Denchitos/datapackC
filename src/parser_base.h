@@ -105,7 +105,7 @@ protected:
     bool expect(const Cmp& cmpVal,const std::string& msg,id i = 0)
     {
         if (match(cmpVal,i)) return true;
-        error(msg);
+        error(msg + " but got: " + look().trueString());
         return false;
     }
 
