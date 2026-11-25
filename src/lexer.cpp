@@ -129,7 +129,6 @@ void Lexer::parseWord()
         current+=c;
         next();
     }
-
     flush(column,row);
 }
 

@@ -305,8 +305,11 @@ tree::BlockPtr Parser::parseRawBlock()
     return block;
 }
 
+
+static auto raw_item_cmp = Token::Comma;
 std::optional<tree::Raw::Variant> Parser::parseRawItem()
 {
+
     constexpr int VAR = 1;
     bool is_literal = false;
     int t = VAR;
@@ -319,7 +322,7 @@ std::optional<tree::Raw::Variant> Parser::parseRawItem()
         next(); 
     }
 
-    if (!expect(Token::Colon,"Expected Colon while parsing raw-emplacement ( after literal-questioning )"))
+    if (!expect(raw_item_cmp,"Expected ',' while parsing raw-emplacement ( after literal-questioning )"))
     {
         return std::nullopt;
     };
@@ -332,7 +335,7 @@ std::optional<tree::Raw::Variant> Parser::parseRawItem()
         next(); 
     }
 
-    if (!expect(Token::Colon,"Expected Colon while parsing raw-emplacement ( after type )"))
+    if (!expect(raw_item_cmp,"Expected ',' while parsing raw-emplacement ( after type )"))
     {
         return std::nullopt;
     };
@@ -367,13 +370,11 @@ tree::RawPtr Parser::parseRawLine()
         if ( match(Token::EL) ) break;
         else if ( ( compare(Token{"%",Token::Operator})) && compare(Token::OParen,1) )
         {
-            std::cout<<"HERE\n";
             bool sp_bef = look().space_before;
             next(2);
             auto it = parseRawItem();
             if ( !it )
             {
-                std::cout<<"HERE1\n";
                 error("Error while parsing raw-emplacement");
                 while ( true )
                 {
@@ -382,12 +383,10 @@ tree::RawPtr Parser::parseRawLine()
                 }
             }
             else {
-                std::cout<<"HERE2\n";
                 auto& x = *it;
                 raw->raw.emplace_back(std::move(x),sp_bef);
-                std::cout<<"There\n";
-                expect(Token::CParen,"Expected '(' that closes raw-emplacement");
-                std::cout<<"AfterAll\n";
+                expect(Token::CParen,"Expected ')%' that closes raw-emplacement");
+                expect(Token{"%",Token::Operator},"Expected '%' that closes raw-emplacement");
             }
         }
         else if ( compare(Token::Literal) )
