@@ -191,10 +191,17 @@ void CompilerVisitor::visit(tree::MemberAccess* mem)
     Value value(val,{});
     while ( i < size  )
     {
-        if ( auto var = exprCast<tree::Variable>( members[i].get() ) ) genStructMemberAccess(var,value,i);
-        else if ( auto call = exprCast<tree::Call>( members[i].get() ) ) genCallMemberAccess(call,value,i);
-        else if ( auto call = exprCast<tree::RawSelector>( members[i].get() ) ) genSelectorMemberAccess(call,value,i);
-        else throw std::runtime_error(getRowCol(mem->members[i].get()) +" Unexpected Situation in member access");
+        auto j = i;
+        try {
+            if ( auto var = exprCast<tree::Variable>( members[i].get() ) ) genStructMemberAccess(var,value,i);
+            else if ( auto call = exprCast<tree::Call>( members[i].get() ) ) genCallMemberAccess(call,value,i);
+            else if ( auto call = exprCast<tree::RawSelector>( members[i].get() ) ) genSelectorMemberAccess(call,value,i);
+            else throw std::runtime_error(getRowCol(mem->members[i].get()) +" Unexpected Situation in member access");
+        }
+        catch( std::exception& e)
+        {
+            throw std::runtime_error(members[j].get()->getRowCol() + " " + e.what());
+        }
     }
     op_stack.emplace(value);
 } 
@@ -304,16 +311,20 @@ void CompilerVisitor::genListMemberAccess(tree::Call* call, Value& value,size_t 
 
         call->call_args[0]->accept(this);
         auto item = getTopOperand();
+
         auto expected_type = value.type.getListDown();
-        if ( item.type != expected_type )
+
+
+        if ( !fileCtx->hasOperation("=",expected_type,item.type) )
         {
             try 
             {
-                item = codeGen->cast(expected_type,item);
+                auto x = codeGen->cast(expected_type,item);
+                item = x;
             }
             catch (std::exception& e)
             {
-                throw std::runtime_error(getRowCol(call) + " list builtin member function prepend("+fileCtx->typeToStr(expected_type)+") got argument with type " + fileCtx->typeToStr(item.type)+"\n\t"+e.what());
+                throw std::runtime_error(call->getRowCol() + " list builtin member function append("+fileCtx->typeToStr(expected_type)+") got argument with type " + fileCtx->typeToStr(item.type)+"\n\t"+e.what());
             }
         }
         fileCtx->println( "data modify "+value.to_string()+" append from "+ item.to_string() );
@@ -361,6 +372,15 @@ void CompilerVisitor::genListMemberAccess(tree::Call* call, Value& value,size_t 
             }
         }
         fileCtx->println( "data modify "+value.to_string()+" insert "+idx.to_string()+" from "+ item.to_string() );
+    }
+    else if ( call->getName() == "remove" )
+    {
+        auto len = call->call_args.size();
+        if ( len != 1 ) throw std::runtime_error(getRowCol(call) + " list builtin member function remove(numberLiteral,item) has one argument, but got " + std::to_string(len) );
+        call->call_args[0]->accept(this);
+        auto idx = getTopOperand();
+        if ( idx.type != Type::numberLiteral ) throw std::runtime_error(getRowCol(call) + " list builtin member function insert(numberLiteral,item): first argument must be a numberLiteral,but got " + fileCtx->typeToStr(idx.type) );
+        fileCtx->println( "data remove "+value.to_string()+"["+idx.to_string()+"]");
     }
     else throw std::runtime_error(getRowCol(call) + " unknown member function '" + call->getName() + "' for builtin type " + fileCtx->typeToStr(value.type) );
 }

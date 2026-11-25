@@ -205,7 +205,7 @@ void CallTreeBuilder::memAccessList(tree::Call* call,Type& current_type,size_t& 
     auto& name = call->getName();
     if      ( name == "operator[]" ) current_type = current_type.getListDown();
     else if ( name == "len" )    current_type = Type::score;
-    else if ( name == "append" || name == "prepend" || name == "insert");
+    else if ( name == "append" || name == "prepend" || name == "insert" || name == "remove");
     else throw std::runtime_error(call->getRowCol() + " unknown member function '" + call->getName() + "' for builtin type " + fileCtx->typeToStr(current_type));
 }
 

@@ -217,6 +217,10 @@ static std::unordered_map<std::pair<Type,Type>,operator_form>  genAssign_map{
         fileCtx->println("data modify "+lhs.to_string() + " set from " + rhs.to_string() );
         return lhs;
     }},
+    { { Type::selector,Type::rawSelector },[](FileCompilationContext* fileCtx,const Value& lhs,const Value& rhs) -> Value
+    {
+        return {{rhs.to_string()},Type::selector};
+    }},
     { { Type::nbt,Type::nbt },[](FileCompilationContext* fileCtx,const Value& lhs,const Value& rhs) -> Value
     {
         fileCtx->println("data modify "+lhs.to_string() + " set from " + rhs.to_string() );
@@ -345,7 +349,6 @@ static size_t getInitListLen(const Value& init_list)
 
 static Value genAssignListInitList(FileCompilationContext* fileCtx,const Value& lhs,const Value& rhs)
 {       
-
     auto init_list_len = getInitListLen(rhs);
 
     std::string initialize;
@@ -354,9 +357,11 @@ static Value genAssignListInitList(FileCompilationContext* fileCtx,const Value& 
     {
         initialize += "{},";
     }
-    initialize.pop_back();
+    if ( !initialize.empty() ) initialize.pop_back();
 
     fileCtx->println( "data modify " + lhs.to_string() + " set value ["+ initialize +"]" );
+
+    if ( init_list_len == 0 ) return lhs;
 
     size_t rhs_value_i = 0;
     auto size = rhs.value.size();
@@ -458,7 +463,7 @@ Value ExprCodeGen::cast(const Type& type,const Value& value)
     }
     catch( std::exception&e )
     {
-        throw std::runtime_error("Unable to cast " + fileCtx->typeToStr(value.type) + " to type " + fileCtx->typeToStr(type));
+        throw std::runtime_error("Unable to cast " + fileCtx->typeToStr(value.type) + " to type " + fileCtx->typeToStr(type) + ",beacuse: " + e.what());
     }
 }
 
