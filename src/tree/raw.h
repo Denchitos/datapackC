@@ -1,5 +1,5 @@
 #pragma once
-#include"node.h"
+#include"expr.h"
 #include<variant>
 TREE_BEGIN
 
@@ -9,14 +9,13 @@ struct Raw : public Node
 {
     struct Emplace
     {
-        bool is_literal;
-        bool is_token;
+        bool is_literal = false;
     };
 
     struct Var : public Emplace
     {
-        std::unique_ptr<ExprNode> expr;
-        char id;
+        std::unique_ptr<ExprNode> expr = nullptr;
+        char id = -1;
     };
 
     struct Func : public Emplace

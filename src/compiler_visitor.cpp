@@ -447,35 +447,71 @@ void CompilerVisitor::visit(tree::Objective* obj)
     }
 }   
 
+namespace 
+{
+    template<class... Ts>struct overloaded : Ts... { using Ts::operator()...; };
+}
+
 void CompilerVisitor::visit(tree::Raw* raw)
 {
-    std::string a;
-    for ( auto& it : raw->raw )
+    std::string result;
+    bool is_prev_literal = false;
+    auto it  = raw->raw.begin();
+    auto end = raw->raw.end();
+    for ( ; it != end ; ++it )
     {
-        if ( it.space_before ) a+=' ';
-        if ( it.is_literal ) a+='\"';
-        switch (it.type){
-            case tree::Raw::Word : a+=it.str; break;
-            case tree::Raw::Var  : {
-                if ( it.id == -1  )
+        auto str = std::visit(overloaded
+            {
+                [&is_prev_literal](const tree::Raw::Word& w) -> std::string
                 {
-                    for ( auto& str : fileCtx->getSymbol(it.str).value )
+                    is_prev_literal = false;
+                    return w.tok;
+                },
+                [&result,&is_prev_literal](const tree::Raw::Literal& lit)-> std::string
+                {
+                    std::string str ;
+                    if ( is_prev_literal)
+                        result.pop_back();
+                    else
+                        str.append("\"");
+                    is_prev_literal = true;
+                    str.append(lit.tok).append("\"");
+
+                    return str;
+                },
+                [&result,&is_prev_literal,this](const tree::Raw::Var& var)-> std::string
+                {
+                    std::string str;
+                    var.expr->accept(this);
+                    
+                    auto val = getTopOperand();
+                    auto size = val.value.size();
+                    bool is_lit = var.is_literal;
+
+                    if ( is_prev_literal && is_lit )
+                        result.pop_back();
+                    else if ( !is_prev_literal && is_lit )
+                        str.append("\"");
+
+                    auto id = var.id;
+                    if ( id == -1 ) str.append(val.to_string());   
+                    else if ( id < 0 || id >= size ) throw std::runtime_error(var.expr->getRowCol() + " The id value must be between 0 and " + std::to_string(size));
+                    else str.append(val.value[id]);
+                    
+                    if ( is_lit )
                     {
-                        a+=str+" ";
+                        str.append("\"");
+                        is_prev_literal = true;
                     }
-                    a.pop_back(); // Удаляем последний пробел ... не нашёл нормального решение пока
+                    else is_prev_literal = false;
+                    return str;
                 }
-                else
-                {
-                    a+=fileCtx->getSymbol(it.str).value[it.id];
-                } 
-                break;
-            }
-        }
-        if ( it.is_literal ) a+='\"'; 
+            },it->item);
+        if ( it->space_before ) result+=' ';
+        result+=str;
     }
-    if ( a[0] != ' ')fileCtx->println(a);
-    else fileCtx->println(a.substr(1,a.length()-1));
+    if ( result[0] != ' ')fileCtx->println(result);
+    else fileCtx->println(result.substr(1,result.length()-1));
 }
 
 void CompilerVisitor::visit(tree::If* If)

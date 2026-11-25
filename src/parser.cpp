@@ -307,12 +307,9 @@ tree::BlockPtr Parser::parseRawBlock()
 
 std::optional<tree::Raw::Variant> Parser::parseRawItem()
 {
-    enum class type
-    {
-        var, //func - later
-    };
-    bool is_literal;
-    type t = type::var;
+    constexpr int VAR = 1;
+    bool is_literal = false;
+    int t = VAR;
 
     if ( compare(Token::Word) )
     {
@@ -330,7 +327,7 @@ std::optional<tree::Raw::Variant> Parser::parseRawItem()
     if ( compare(Token::Word) )
     {
         auto& word = look().tok;
-        if ( word == "var" ) t = type::var;
+        if ( word == "var" ) t = VAR;
         else error("Unexpected word "+word);
         next(); 
     }
@@ -340,16 +337,25 @@ std::optional<tree::Raw::Variant> Parser::parseRawItem()
         return std::nullopt;
     };
 
-    if ( t == type::var )
+    if ( t == VAR )
     {
+        if ( !expect(Token::Word,"Expected The word,but got nothing") )
+        {
+            return std::nullopt;
+        }
+        next(-1);
         auto expr = parseTerm();
         char id = -1;
-        if ( match(Token::Colon) )
+        if ( match(Token::Comma) )
         {
             if ( !expect(Token::Number,"Expected Number after ':' in raw-emplacement after value") ) return std::nullopt;
             id = static_cast<char>(std::stoi(look(-1).tok));
         }
-        return tree::Raw::Var(is_literal,std::move(expr),id);
+        return tree::Raw::Var({is_literal},std::move(expr),id);
+    }
+    else
+    {
+        return std::nullopt;
     }
 }
 
@@ -359,13 +365,15 @@ tree::RawPtr Parser::parseRawLine()
     while ( true )
     {
         if ( match(Token::EL) ) break;
-        else if ( ( compare(Token{"%",Token::Operator})) && compare(Token::OParen) )
+        else if ( ( compare(Token{"%",Token::Operator})) && compare(Token::OParen,1) )
         {
+            std::cout<<"HERE\n";
             bool sp_bef = look().space_before;
             next(2);
             auto it = parseRawItem();
             if ( !it )
             {
+                std::cout<<"HERE1\n";
                 error("Error while parsing raw-emplacement");
                 while ( true )
                 {
@@ -374,9 +382,12 @@ tree::RawPtr Parser::parseRawLine()
                 }
             }
             else {
+                std::cout<<"HERE2\n";
                 auto& x = *it;
-                raw->raw.emplace_back(x,sp_bef);
+                raw->raw.emplace_back(std::move(x),sp_bef);
+                std::cout<<"There\n";
                 expect(Token::CParen,"Expected '(' that closes raw-emplacement");
+                std::cout<<"AfterAll\n";
             }
         }
         else if ( compare(Token::Literal) )

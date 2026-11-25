@@ -4,9 +4,6 @@
 
 TREE_BEGIN
 
-Raw::Raw(const Token& tok): Node(tok)
-{}
-
 void Raw::accept(Visitor* v)
 {
     v->visit(this);
