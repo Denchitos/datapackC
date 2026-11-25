@@ -17,7 +17,7 @@ namespace fs = std::filesystem;
 #include"tree/raw.h"
 #include"tree/expr.h"
 #include"tree/vardecl.h"
-
+#include "file_ast.h"
 class Parser : public ParserBase<Token>
 {
     fs::path currentFile;
@@ -39,7 +39,7 @@ public:
     void statementPanic();
 
     bool varDeclPanic();
-    std::vector<tree::NodePtr> parse();
+    std::unique_ptr<FileAST> parse(bool isGlobal);
 
     std::string parseName();
     tree::NodePtr parseImport();    

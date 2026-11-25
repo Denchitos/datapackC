@@ -22,22 +22,50 @@ static void emplace_back(std::vector<tree::NodePtr>& ast,tree::NodePtr&& node)
     if ( node ) ast.emplace_back(std::move(node));
 }
 
-std::vector<tree::NodePtr> Parser::parse()
+std::unique_ptr<FileAST> Parser::parse(bool isGlobal)
 {
-    std::vector<tree::NodePtr> v;
+    auto file_ast = std::make_unique<FileAST>();
 
     while (!atEnd())
     {
-        if (match(Token{"def",Token::Word})) emplace_back(v,parseFunction(true));
+        if (match(Token{"def",Token::Word}))
+        {
+            auto fun = parseFunction(true);
+            if ( isGlobal ) fun->is_static = true;
+            emplace_back(file_ast->functions,std::move(fun));
+        }
         else if (match(Token{"inline",Token::Word})){
             auto& tok = look();
             auto inl = parseFunction(false);
-            emplace_back(v,std::make_unique<tree::InlinedFunction>(tok,std::move(inl)));
+            if ( isGlobal ) inl->is_static = true;
+            emplace_back(file_ast->inlines,std::make_unique<tree::InlinedFunction>(tok,std::move(inl)));
         }
-        else if (compare(Token{"namespace",Token::Word})) emplace_back(v,parseNamespace());
-        else if (compare(Token{"objective",Token::Word})) emplace_back(v,parseObjective());
-        else if (compare(Token{"storage",Token::Word})) emplace_back(v,parseStorageDecl());
-        else if (compare(Token{"import",Token::Word})) emplace_back(v,parseImport());
+        else if (compare(Token{"namespace",Token::Word}))
+        {
+            if ( !file_ast->nmsp && isGlobal )
+                file_ast->nmsp=parseNamespace();
+            else if ( file_ast->nmsp ){
+                error("Redefinition of file namespace!");
+                statementPanic();
+            }
+            else if ( !isGlobal )
+            {
+                error("You can define namespace only in global space in file!");
+                statementPanic();
+            }
+        }
+        else if (compare(Token{"objective",Token::Word}))
+        {
+            emplace_back(file_ast->objectives,parseObjective());
+        }
+        else if (compare(Token{"storage",Token::Word}))
+        {
+            emplace_back(file_ast->storages,parseStorageDecl());
+        }
+        else if (compare(Token{"import",Token::Word}))
+        {
+            emplace_back(file_ast->imports,parseImport());
+        }
         else
         {
             error("Undefined Token in global space");
@@ -45,7 +73,7 @@ std::vector<tree::NodePtr> Parser::parse()
         }
     }
 
-    return v;
+    return file_ast;
 }
 
 tree::NodePtr Parser::parseImport()
