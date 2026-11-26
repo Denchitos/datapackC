@@ -201,10 +201,6 @@ public:
                 res = BAD_FORWARD_DECL;
             }
 
-            std::cout<<"\tAll storages:\n";
-            
-            ctx->printDeclaredStorages();
-
             file.fileCtx = ctx;
 
         }
@@ -233,7 +229,6 @@ public:
                 res = BAD_RECURSIVE_DECL;
             }
 
-            file.fileCtx->printDeclaredStorages();
         }
         return result;
     }
@@ -261,6 +256,14 @@ public:
                 for ( auto& node : file.ast->storages )
                 {
                     node->accept(recursive.get());
+                }  
+                for ( auto& node : file.ast->variables )
+                {
+                    node->accept(recursive.get());
+                }   
+                for ( auto& node : file.ast->objectives )
+                {
+                    node->accept(recursive.get());
                 }    
             }
             catch ( std::exception& e ){
@@ -268,8 +271,6 @@ public:
                 result = false;
                 res = BAD_FORWARD_DEF;
             }
-
-            file.fileCtx->printDefinedStorages();
 
         }
         return result;
@@ -296,7 +297,6 @@ public:
                 res = BAD_RECURSIVE_DECL;
             }
 
-            file.fileCtx->printDefinedStorages();
         }
         return result;
     }
