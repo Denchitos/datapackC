@@ -157,9 +157,9 @@ void CompilerVisitor::visit(tree::StorageDecl* storage_decl)
     auto& ast = storage_decl->ast;
     if ( ast->functions.empty() ) return;
 
-    fileCtx->currentNamespace.push( storage_decl->getName() );
+    current_storage.push(&(fileCtx->getStorageDecl(fileCtx->currentNamespace.toMinecraftPath()+storage_decl->getName())));
 
-    current_storage = &(fileCtx->getStorageDecl(storage_decl->getName()));
+    fileCtx->currentNamespace.push( storage_decl->getName() );
 
     for ( auto & method : storage_decl->ast->functions )
     {
@@ -171,7 +171,7 @@ void CompilerVisitor::visit(tree::StorageDecl* storage_decl)
         method->accept(this);
     }
     
-    current_storage = nullptr;
+    current_storage.pop();
     
     fileCtx->currentNamespace.pop();
 }
@@ -773,9 +773,9 @@ void CompilerVisitor::visit(tree::Return* ret)
 
     auto name = fileCtx->realFunction().getName();
 
-    FunctionDeclaration funcDecl; 
-    if ( current_storage==nullptr ) funcDecl = fileCtx->getFuncDecl(name);
-    else funcDecl = current_storage->methods[fileCtx->realFunction().getName()];
+    FunctionDeclaration funcDecl;
+    if ( current_storage.empty() ) funcDecl = fileCtx->getFuncDecl(name);
+    else funcDecl = current_storage.top()->methods[fileCtx->realFunction().getName()];
 
     if ( funcDecl.ret.has_value() )
     {

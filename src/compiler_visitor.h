@@ -16,7 +16,7 @@ class CompilerVisitor : public Visitor
     std::shared_ptr<ExprCodeGen> codeGen;
     IterableStack<Value> op_stack;
 
-    StorageDefinition* current_storage = nullptr;
+    std::stack<StorageDefinition*> current_storage;
 
     bool is_in_inlined_function = false;
 public:
