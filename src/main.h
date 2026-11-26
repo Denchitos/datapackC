@@ -201,6 +201,10 @@ public:
                 res = BAD_FORWARD_DECL;
             }
 
+            std::cout<<"\tAll storages:\n";
+            
+            ctx->printDeclaredStorages();
+
             file.fileCtx = ctx;
 
         }
@@ -229,6 +233,7 @@ public:
                 res = BAD_RECURSIVE_DECL;
             }
 
+            file.fileCtx->printDeclaredStorages();
         }
         return result;
     }
@@ -264,6 +269,8 @@ public:
                 res = BAD_FORWARD_DEF;
             }
 
+            file.fileCtx->printDefinedStorages();
+
         }
         return result;
     }
@@ -288,6 +295,8 @@ public:
                 result = false;
                 res = BAD_RECURSIVE_DECL;
             }
+
+            file.fileCtx->printDefinedStorages();
         }
         return result;
     }

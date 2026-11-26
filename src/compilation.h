@@ -223,7 +223,6 @@ public:
         return name;
     }
 
-
     void pushType(const std::string& name)
     {
         declared_types.emplace(name);
@@ -383,7 +382,9 @@ public:
     InlinedFunctionDeclaration& getInlinedDecl(const std::string& func_name)
     {
         auto name = resolveName(func_name);
-        return declared_inlined_functions.at(name);
+        auto it = declared_inlined_functions.find(name);
+        if ( it != declared_inlined_functions.end() ) return it->second;
+        throw std::runtime_error("Got unknown inlined function: "+name+"\n");
     }
 
     const auto& getObjectives()
@@ -444,11 +445,28 @@ public:
         return declared_storages.contains(name);
     }
 
+    void printDeclaredStorages()
+    {
+        for ( auto& name : declared_types)
+        {
+            std::cout<<"storage - "<<name<<"\n";
+        }
+    }
+
+    void printDefinedStorages()
+    {
+        for ( auto& [name,_] : declared_storages )
+        {
+            std::cout<<"storage - "<<name<<"\n";
+        }
+    }
+
     StorageDefinition& getStorageDecl(const std::string& stor_name)
     {
         auto name = resolveTypeName(stor_name);
         if ( declared_storages.contains(name) ) return declared_storages.at(name);
-        else throw std::runtime_error("Unknown string "+ name + " while trying to converse it to StorageDecl ");
+
+        throw std::runtime_error("Unknown string "+ name + " while trying to converse it to StorageDecl ");
     }
     
     StorageDefinition& getStorageDecl(const Type& type)

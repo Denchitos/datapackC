@@ -11,8 +11,21 @@
 
 void ForwardStorageDeclaration::visit(tree::StorageDecl* storage_decl)
 {
-    if ( !fileCtx->registerType(storage_decl->getName()) )
+
+    if ( !fileCtx->registerType(fileCtx->currentNamespace.toMinecraftPath()+storage_decl->getName()) )
         throw std::runtime_error(storage_decl->getRowCol()+" Redefinition of type: '" + storage_decl->getName() + "' on line: " + storage_decl->getName() + " in row: " + storage_decl->getName() + " this type name is declared yet");
+    
+    std::cout<<"storage declared: "<<fileCtx->currentNamespace.toMinecraftPath()<<storage_decl->getName()<<"\n";
+
+    fileCtx->currentNamespace.push(storage_decl->getName());
+
+    for ( auto & inner : storage_decl->ast->storages)
+    {
+        inner->accept(this);
+    }
+
+    fileCtx->currentNamespace.pop();
+
 }
 
 void ForwardStorageDeclaration::visit(tree::Objective* obj)
@@ -55,7 +68,6 @@ void RecursiveStorageDeclaration::visit(tree::Import* imp)
         node->accept(this);
     }
 }
-
 
 Value ForwardDefiner::declArg(tree::VarDecl* varDecl)
 {
@@ -105,25 +117,6 @@ FunctionDeclaration ForwardDefiner::makeFuncDecl(tree::Function* func)
     return func_decl;
 }
 
-void ForwardDefiner::visit(tree::Function* func)
-{
-    try{
-        auto func_decl = makeFuncDecl(func);
-
-        if ( func_decl.ret.has_value() && !func->alwaysReturn )
-        {
-            throw std::runtime_error("Function '"+func->getName()+"' don't return always");
-        }
-
-        if (!fileCtx->registerFunc(func->getName(),std::move(func_decl) ))
-            throw std::runtime_error("Redifinition of callable name '"+func->getName()+"'");
-    }
-    catch(std::exception& e)
-    {
-        throw std::runtime_error(func->getRowCol() + " " + e.what());
-    }
-}
-
 InlinedFunctionDeclaration ForwardDefiner::makeInlinedFuncDecl(tree::InlinedFunction* func)
 {
     auto name = func->getName();
@@ -146,57 +139,127 @@ InlinedFunctionDeclaration ForwardDefiner::makeInlinedFuncDecl(tree::InlinedFunc
     return func_decl;
 }
 
+void ForwardDefiner::visit(tree::Function* func)
+{
+    if ( func->is_static ) visitStatic(func);
+    else visitMember(func);
+}
+
+void ForwardDefiner::visitStatic(tree::Function* func)
+{
+    try{
+        auto func_decl = makeFuncDecl(func);
+
+        if ( func_decl.ret.has_value() && !func->alwaysReturn )
+        {
+            throw std::runtime_error("Function '"+func->getName()+"' don't return always");
+        }
+
+        if (!fileCtx->registerFunc(func->getName(),std::move(func_decl) ))
+            throw std::runtime_error("Redifinition of callable name '"+func->getName()+"'");
+    }
+    catch(std::exception& e)
+    {
+        throw std::runtime_error(func->getRowCol() + " " + e.what());
+    }
+}
+
+void ForwardDefiner::visitMember(tree::Function* func)
+{
+    if ( storages.empty() ){
+        std::cout<<"Expected Storage in stack but it is empty\n";
+        return;
+    }
+    auto& storageDecl = storages.top();
+    auto method_decl = makeFuncDecl(func);
+    storageDecl.methods[func->getName()] = std::move(method_decl);
+}
+
 void ForwardDefiner::visit(tree::InlinedFunction* func)
 {
-    //std::cout<<->getRowCol()func)<<" DECLARATING INLINE '"+func->getName()+"'\n";
+    if ( func->is_static ) visitStatic(func);
+    else visitMember(func);
+}
+
+void ForwardDefiner::visitStatic(tree::InlinedFunction* func)
+{
     auto&& val = makeInlinedFuncDecl(func);
-    if ( !fileCtx->registerInlined(func->getName(),std::move(val) ) )
-        throw std::runtime_error(func->getRowCol()+" Redifinition of callable name '"+func->getName()+"'");
+        if ( !fileCtx->registerInlined(func->getName(),std::move(val) ) )
+            throw std::runtime_error(func->getRowCol()+" Redifinition of callable name '"+func->getName()+"'");
+}
+
+void ForwardDefiner::visitMember(tree::InlinedFunction* func)
+{
+    if ( storages.empty() ){
+        std::cout<<"Expected Storage in stack but it is empty\n";
+        return;
+    }
+
+    auto& storageDecl = storages.top();
+    auto method_decl = makeInlinedFuncDecl(func);
+    storageDecl.inlined_methods[func->getName()] = std::move(method_decl);
+}
+
+void ForwardDefiner::visit(tree::OutScopeVar* var)
+{
+    if (var->is_static )
+        throw std::runtime_error(var->getRowCol() + " static variables are unsupported yet");
+    else
+        visitMember(var);
+}
+
+void ForwardDefiner::visitMember(tree::OutScopeVar* var)
+{
+    auto& field = var->var_decl;
+    auto& name = field->var_name;
+    auto& type_name = field->type;
+    auto type = fileCtx->strToType(type_name);
+    type.list_depth = field->list_depth;
+
+    auto& storageDecl = storages.top();
+
+    if ( storageDecl.fields.contains(name) ) throw std::runtime_error( var->getRowCol()+"Redefinition of field in storage");
+    
+    storageDecl.field_names.emplace_back(name);
+    storageDecl.fields.emplace(name,type);
 }
 
 void ForwardDefiner::visit(tree::StorageDecl* storage_decl)
 {
-    auto& storage_name = storage_decl->getName();
+    auto storage_name = fileCtx->currentNamespace.toMinecraftPath()+storage_decl->getName();
+
     if ( fileCtx->hasType( storage_name ) )
     {
-        StorageDefinition storageDecl;
-        for ( auto & field : storage_decl->fields )
+        auto& ast = storage_decl->ast;
+        
+        storages.emplace();
+        fileCtx->currentNamespace.push(storage_decl->getName());
+        
+        for ( auto& node: ast->functions )
         {
-            auto& name = field->var_name;
-            auto& type_name = field->type;
-            auto type = fileCtx->strToType(type_name);
-            type.list_depth = field->list_depth;
-
-            if ( storageDecl.fields.contains(name) ) throw std::runtime_error( storage_decl->getRowCol()+"Redefinition of field in storage '"+storage_name+"'");
-            
-            storageDecl.field_names.emplace_back(name);
-            storageDecl.fields.emplace(name,type);
+            node->accept(this);
         }
-        if ( !storage_decl->methods.empty() )
+        
+        for ( auto& node : ast->inlines )
         {
-            fileCtx->currentNamespace.push(storage_decl->getName());
-
-            for ( auto & method : storage_decl->methods )
-            {
-                auto method_decl = makeFuncDecl(method.get());
-                storageDecl.methods[method->getName()] = std::move(method_decl);
-            }
-
-            fileCtx->currentNamespace.pop();
+            node->accept(this);
         }
-        if ( !storage_decl->inlined_methods.empty() )
+
+        for ( auto& node : ast->variables )
         {
-            fileCtx->currentNamespace.push(storage_decl->getName());
-
-            for ( auto & method : storage_decl->inlined_methods )
-            {
-                auto method_decl = makeInlinedFuncDecl(method.get());
-                storageDecl.inlined_methods[method->getName()] = std::move(method_decl);
-            }
-
-            fileCtx->currentNamespace.pop();
+            node->accept(this);
         }
-        fileCtx->registerStorage(storage_name,std::move(storageDecl));
+        
+        for ( auto& node : ast->storages )
+        {
+            node->accept(this);
+        }
+
+        auto storage_decl = std::move(storages.top());
+
+        fileCtx->currentNamespace.pop();
+        storages.pop();
+        fileCtx->registerStorage(storage_name,std::move(storage_decl));
     }
 }
 

@@ -27,6 +27,15 @@ struct VarDecl : public Node
     void accept(Visitor*);
 };
 
+struct OutScopeVar : public Node
+{
+    std::unique_ptr<VarDecl> var_decl;
+
+    OutScopeVar(const Token& tok) : Node(tok) {}
+    void accept(Visitor*);
+    bool is_static = false;
+};
+
 using VarDeclPtr = std::unique_ptr<VarDecl>;
 
 TREE_END

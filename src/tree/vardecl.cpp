@@ -44,7 +44,8 @@ const std::string& VarDecl::getVarType()
 
 
 
-TREE_ACCEPT_MACRO(VarDecl);
+TREE_ACCEPT_MACRO(VarDecl)
+TREE_ACCEPT_MACRO(OutScopeVar)
 
 
 

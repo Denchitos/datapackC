@@ -1,3 +1,4 @@
+#pragma once
 #include<vector>
 #include"tree/node.h"
 
@@ -9,4 +10,5 @@ struct AST
     std::vector<tree::NodePtr> inlines;
     std::vector<tree::NodePtr> objectives;
     std::vector<tree::NodePtr> storages;
+    std::vector<tree::NodePtr> variables;
 };

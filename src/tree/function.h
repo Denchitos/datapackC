@@ -38,6 +38,7 @@ struct InlinedFunction : public Node
     InlinedFunction(const Token& tok,FunctionPtr&& function) : Node(tok){
         body = std::move(function->body);
         args = std::move(function->args);
+        is_static = function->is_static;
     }
     
     void accept( Visitor* v ){

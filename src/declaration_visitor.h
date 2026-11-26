@@ -48,10 +48,21 @@ public:
 class ForwardDefiner : public SupportVisitor
 {
     Value declArg(tree::VarDecl*);
+
+    std::stack<StorageDefinition> storages;
     FunctionDeclaration makeFuncDecl(tree::Function* func);
     InlinedFunctionDeclaration makeInlinedFuncDecl(tree::InlinedFunction* func);
+
+    void visitStatic(tree::Function*);
+    void visitStatic(tree::InlinedFunction*);
+
+    void visitMember(tree::Function*);
+    void visitMember(tree::InlinedFunction*);
+
+    void visitMember(tree::OutScopeVar*);
 public:
     ForwardDefiner(std::shared_ptr<FileCompilationContext> ctx,std::shared_ptr<Modules> modules) : SupportVisitor(ctx,modules) {}
+    void visit(tree::OutScopeVar*) override;
     void visit(tree::Function*) override;
     void visit(tree::InlinedFunction*) override;
     void visit(tree::StorageDecl*) override;
@@ -61,7 +72,6 @@ class RecursiveDefiner : public SupportVisitor
 {
     std::unordered_set<fs::path> visited_import;
 public:
-
     bool isImported(const fs::path& path)
     {
         return visited_import.contains(path);
@@ -70,6 +80,5 @@ public:
     {
         visited_import.emplace(path);
     }
-
     void visit(tree::Import*) override;
 };

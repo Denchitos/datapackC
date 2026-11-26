@@ -40,6 +40,7 @@ public:
 
     bool varDeclPanic();
     std::unique_ptr<AST> parse(bool isGlobal);
+    void parseScopeItem(std::unique_ptr<AST>&,bool isGlobal);
 
     std::string parseName();
     tree::NodePtr parseImport();    

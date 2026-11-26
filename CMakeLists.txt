@@ -8,4 +8,4 @@ file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS
 )
 
 add_executable(datapackc ${APP_SOURCES})
-target_link_options(datapackc PRIVATE -static)
+target_link_options(datapackc PRIVATE -static -g)

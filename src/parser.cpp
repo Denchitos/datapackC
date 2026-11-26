@@ -25,55 +25,70 @@ static void emplace_back(std::vector<tree::NodePtr>& ast,tree::NodePtr&& node)
 std::unique_ptr<AST> Parser::parse(bool isGlobal)
 {
     auto file_ast = std::make_unique<AST>();
-
-    while (!atEnd())
+    while ( !atEnd() )
     {
-        if (match(Token{"def",Token::Word}))
-        {
-            auto fun = parseFunction(true);
-            if ( isGlobal ) fun->is_static = true;
-            emplace_back(file_ast->functions,std::move(fun));
+        parseScopeItem(file_ast,true);
+    }
+    return file_ast;
+}
+
+void Parser::parseScopeItem(std::unique_ptr<AST>& file_ast, bool isGlobal)
+{
+    if (match(Token{"def",Token::Word}))
+    {
+        auto fun = parseFunction(true);
+        if ( isGlobal ) fun->is_static = true;
+        emplace_back(file_ast->functions,std::move(fun));
+    }
+    else if (match(Token{"inline",Token::Word})){
+        auto& tok = look();
+        auto inl = parseFunction(false);
+        if ( isGlobal ) inl->is_static = true;
+
+        emplace_back(file_ast->inlines,std::make_unique<tree::InlinedFunction>(tok,std::move(inl)));
+    }
+    else if (compare(Token{"namespace",Token::Word}))
+    {
+        if ( !file_ast->nmsp && isGlobal )
+            file_ast->nmsp=parseNamespace();
+        else if ( file_ast->nmsp ){
+            error("Redefinition of file namespace!");
+            statementPanic();
         }
-        else if (match(Token{"inline",Token::Word})){
-            auto& tok = look();
-            auto inl = parseFunction(false);
-            if ( isGlobal ) inl->is_static = true;
-            emplace_back(file_ast->inlines,std::make_unique<tree::InlinedFunction>(tok,std::move(inl)));
-        }
-        else if (compare(Token{"namespace",Token::Word}))
+        else if ( !isGlobal )
         {
-            if ( !file_ast->nmsp && isGlobal )
-                file_ast->nmsp=parseNamespace();
-            else if ( file_ast->nmsp ){
-                error("Redefinition of file namespace!");
-                statementPanic();
-            }
-            else if ( !isGlobal )
-            {
-                error("You can define namespace only in global space in file!");
-                statementPanic();
-            }
-        }
-        else if (compare(Token{"objective",Token::Word}))
-        {
-            emplace_back(file_ast->objectives,parseObjective());
-        }
-        else if (compare(Token{"storage",Token::Word}))
-        {
-            emplace_back(file_ast->storages,parseStorageDecl());
-        }
-        else if (compare(Token{"import",Token::Word}))
-        {
-            emplace_back(file_ast->imports,parseImport());
-        }
-        else
-        {
-            error("Undefined Token in global space");
+            error("You can define namespace only in global space in file!");
             statementPanic();
         }
     }
-
-    return file_ast;
+    else if (compare(Token{"objective",Token::Word}))
+    {
+        emplace_back(file_ast->objectives,parseObjective());
+    }
+    else if (compare(Token{"let",Token::Word}) )
+    {
+        auto osv = std::make_unique<tree::OutScopeVar>(look());
+        next();
+        bool req_init = false;
+        if ( isGlobal ) req_init = true;
+        osv->var_decl = parseVarDecl(req_init);
+        if ( isGlobal ) osv->is_static = true;
+        emplace_back(file_ast->variables,std::move(osv));
+    }
+    else if (compare(Token{"storage",Token::Word}))
+    {
+        emplace_back(file_ast->storages,parseStorageDecl());
+    }
+    else if (compare(Token{"import",Token::Word}))
+    {
+        emplace_back(file_ast->imports,parseImport());
+    }
+    else
+    {
+        error("Undefined Token in global space");
+        statementPanic();
+    }
+    match(Token::EL);
 }
 
 tree::NodePtr Parser::parseImport()
@@ -102,6 +117,7 @@ tree::NodePtr Parser::parseImport()
     {
         imp->file_name = specified_file;
     }
+    
     else{
         auto abs_name = currentFile.parent_path()/specified_file;
         imp->file_name = fs::weakly_canonical(abs_name);
@@ -192,37 +208,17 @@ tree::NodePtr Parser::parseStorageDecl()
     if (!expect(Token::OBrace,"Expected a '{' in storage definition") ) return nullptr;
     
     match(Token::EL);
-
-    while ( true )
-    {
-        //std::cout<<"STORAGE DECL CYCLE " << look().tok<<"\n";
-        if ( match(Token{"def",Token::Word} ) ){
-            storage->pushMethod(parseFunction(true));
-            match(Token::EL);
-        }
-        else if ( match(Token{"inline",Token::Word} ) ){
-            auto& tok = look();
-            auto inl = parseFunction(false);
-            auto inl_ptr = std::make_unique<tree::InlinedFunction>(tok,std::move(inl));
-            storage->pushInlined(std::move(inl_ptr));
-            match(Token::EL);
-        }
-        else if ( compare(Token::CBrace) )
-            break;
-        else if ( compare(Token::Word ) ) {            
-            storage->pushField(parseVarDecl(false));
-            match(Token::EL);
-        }
-        else {
-            error("Unexpected Token");
-            statementPanic();
-            return nullptr;
-        }
-    }
     match(Token::EL);
 
-    if (!expect(Token::CBrace,"Expected a '}' after storage definition") ) return nullptr;
+    auto file_ast = std::make_unique<AST>();
 
+    while ( !match(Token::CBrace) )
+    {
+        parseScopeItem(file_ast,false);
+    }
+
+    storage->ast = std::move(file_ast);
+    
     match(Token::EL);
 
     return storage;

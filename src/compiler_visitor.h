@@ -63,6 +63,8 @@ public:
     void visit(tree::StorageDecl* ) override;
     void visit(tree::Import*) override {};
 
+    void visit(tree::OutScopeVar*) override {};
+
     void visit(tree::InitList* init_list) override
     {
         std::vector<std::string> value;

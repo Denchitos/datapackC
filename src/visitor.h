@@ -36,6 +36,7 @@ namespace tree
     class ExprNode;
     class Import;
     class UnaryOperator;
+    class OutScopeVar;
 }
 
 class Visitor
@@ -66,6 +67,7 @@ public:
     virtual void visit(tree::InitList*) = 0;
     virtual void visit(tree::UnaryOperator*) = 0;
     virtual void visit(tree::Import*) = 0;
+    virtual void visit(tree::OutScopeVar*) = 0;
     //virtual void visit(tree::IndexAccess*) = 0;
     virtual ~Visitor() = default;
 };

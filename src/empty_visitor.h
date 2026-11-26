@@ -29,5 +29,6 @@ public:
     void visit(tree::InlinedFunction*) override {};
     void visit(tree::UnaryOperator*) override {};
     void visit(tree::Import*) override {};
+    void visit(tree::OutScopeVar*) override {};
     virtual ~EmptyVisitor() = default;
 };

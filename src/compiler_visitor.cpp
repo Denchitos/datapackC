@@ -154,22 +154,26 @@ void CompilerVisitor::visit(tree::VarDecl* vardecl)
 
 void CompilerVisitor::visit(tree::StorageDecl* storage_decl)
 {
-    if  ( storage_decl->methods.empty() ) return;
-    else
+    auto& ast = storage_decl->ast;
+    if ( ast->functions.empty() ) return;
+
+    fileCtx->currentNamespace.push( storage_decl->getName() );
+
+    current_storage = &(fileCtx->getStorageDecl(storage_decl->getName()));
+
+    for ( auto & method : storage_decl->ast->functions )
     {
-        fileCtx->currentNamespace.push( storage_decl->getName() );
-
-        current_storage = &(fileCtx->getStorageDecl(storage_decl->getName()));
-
-        for ( auto & method : storage_decl->methods )
-        {
-            method->accept(this);
-        }
-        
-        current_storage = nullptr;
-        
-        fileCtx->currentNamespace.pop();
+        method->accept(this);
     }
+
+    for ( auto & method : storage_decl->ast->storages )
+    {
+        method->accept(this);
+    }
+    
+    current_storage = nullptr;
+    
+    fileCtx->currentNamespace.pop();
 }
 
 void CompilerVisitor::visit(tree::Block* b)
