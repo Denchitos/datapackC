@@ -5,7 +5,7 @@
 #include"tree/objective.h"
 #include"tree/import.h"
 #include "file_ast.h"
-
+#include "resolve_name.h"
 void ForwardStorageDeclaration::visit(tree::StorageDecl* storage_decl)
 {
 
@@ -67,8 +67,11 @@ void RecursiveStorageDeclaration::visit(tree::Import* imp)
 
 Value ForwardDefiner::declArg(tree::VarDecl* varDecl)
 {
-    Type type = fileCtx->strToType(varDecl->getVarType());
+    auto& var_type = varDecl->type;
 
+    resolveName(fileCtx.get(),var_type,FileCompilationContext::hasType);
+
+    Type type = fileCtx->strToType(var_type);
     auto name = varDecl->getVarName();
     type.list_depth = varDecl->list_depth;
     auto val = fileCtx->nameMangle( type, name );

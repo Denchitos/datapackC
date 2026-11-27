@@ -15,7 +15,6 @@ protected:
     SupportVisitor(std::shared_ptr<FileCompilationContext> ctx,std::shared_ptr<Modules> modules) : fileCtx(ctx),modules(modules) {}
 };
 
-
 class ForwardStorageDeclaration : public SupportVisitor
 {
 public:
@@ -42,8 +41,6 @@ public:
     
     void visit(tree::Import*) override;
 };
-
-
 
 class ForwardDefiner : public SupportVisitor
 {

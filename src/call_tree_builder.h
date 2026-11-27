@@ -23,6 +23,7 @@ class CallTreeBuilder : public EmptyVisitor
     Type countType(tree::ExprNode*);
     Type typeInferrence(const Type& rhs);
 
+    Namespace currentNamespace{""};
 public:
 
     CallTreeBuilder(std::shared_ptr<FileCompilationContext> fileCtx): fileCtx(fileCtx){}
@@ -30,12 +31,18 @@ public:
     void setFileCtx(std::shared_ptr<FileCompilationContext> fileCtx)
     {
         this->fileCtx = fileCtx;
+        currentNamespace = fileCtx->currentDefinedNamespace;
     }
 
     void visit(tree::Namespace* nmsp);
 
+    void visit(tree::StorageDecl* storageDecl);
     void visit(tree::Function*);
+        void visitStatic( tree::Function* );
+        void visitMember( tree::Function* );
     void visit(tree::InlinedFunction*);
+        void visitMember( tree::InlinedFunction* );
+        void visitStatic( tree::InlinedFunction* );
     
     void visit(tree::VarDecl*);
     void visit(tree::Variable*);

@@ -10,10 +10,11 @@
 #include"tree/while.h"
 #include"tree/if.h"
 #include"tree/raw_selector.h"
-
+#include"tree/storage.h"
+#include"resolve_name.h"
 void CallTreeBuilder::visit(tree::Namespace* nmsp)
 {
-    fileCtx->currentNamespace = { nmsp->namespace_,nmsp->path };
+    currentNamespace = { nmsp->namespace_,nmsp->path };
     fileCtx->currentDefinedNamespace = { nmsp->namespace_,nmsp->path };
 }
 
@@ -79,6 +80,7 @@ void CallTreeBuilder::visit(tree::VarDecl* varDecl)
     
     if ( type_name != "auto" )
     {
+        resolveName(fileCtx.get(),currentNamespace,type_name,FileCompilationContext::hasType);
         vars.top()[name] = fileCtx->strToType(type_name);
         vars.top()[name].list_depth = varDecl->list_depth;
         return;
@@ -250,9 +252,62 @@ void CallTreeBuilder::visit(tree::Call* call)
     }
 }
 
+void CallTreeBuilder::visit(tree::StorageDecl* storageDecl)
+{
+    currentNamespace.push(storageDecl->getName());
+
+    //std::cout<<"[CallTreeBuilder] in "<<currentNamespace.toMinecraftPath()<<"\n"; 
+
+    for ( auto& node : storageDecl->ast->functions )
+    {
+        node->accept(this);
+    }
+
+    for ( auto& node : storageDecl->ast->inlines )
+    {
+        node->accept(this);
+    }
+
+    for ( auto& node : storageDecl->ast->storages)
+    {
+        node->accept(this);
+    }
+
+    currentNamespace.pop();
+
+}
+
 void CallTreeBuilder::visit(tree::Function* func)
 {
-    auto fd = fileCtx->getFuncDecl(fileCtx->currentNamespace.toMinecraftPath()+func->getName());
+    if ( func->is_static ) visitStatic(func);
+    else visitMember(func);
+}
+
+void CallTreeBuilder::visitStatic(tree::Function* func)
+{
+    auto fd = fileCtx->getFuncDecl(currentNamespace.toMinecraftPath()+func->getName());
+
+    current_function_name = fd.minecraft_name;
+
+    vars.emplace();
+
+    for ( auto& it : func->args )
+    {
+        visit(it.get());
+    }
+
+    func->body->accept(this);
+
+    vars.pop();
+}
+
+void CallTreeBuilder::visitMember(tree::Function* func)
+{
+    auto n = currentNamespace.toMinecraftPath();
+    
+    n.pop_back();
+    
+    auto fd = fileCtx->getStorageDecl(n).methods[func->getName()];
 
     current_function_name = fd.minecraft_name;
 
@@ -270,7 +325,33 @@ void CallTreeBuilder::visit(tree::Function* func)
 
 void CallTreeBuilder::visit(tree::InlinedFunction* func)
 {
-    auto fd = fileCtx->getInlinedDecl(fileCtx->currentNamespace.toMinecraftPath()+func->getName());
+    if ( func->is_static ) visitStatic(func);
+    else visitMember(func);
+}
+
+void CallTreeBuilder::visitMember(tree::InlinedFunction* func)
+{
+    auto n = currentNamespace.toMinecraftPath();
+    n.pop_back();
+    auto fd = fileCtx->getStorageDecl(n).inlined_methods[func->getName()];
+
+    current_function_name = fd.minecraft_name;
+
+    vars.emplace();
+
+    for ( auto& it : func->args )
+    {
+        visit(it.get());
+    }
+
+    func->body->accept(this);
+
+    vars.pop();
+}
+
+void CallTreeBuilder::visitStatic(tree::InlinedFunction* func)
+{
+    auto fd = fileCtx->getInlinedDecl(currentNamespace.toMinecraftPath()+func->getName());
 
     current_function_name = fd.minecraft_name;
 

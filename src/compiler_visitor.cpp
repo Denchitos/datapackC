@@ -61,7 +61,6 @@ void CompilerVisitor::visit(tree::Function* func)
         last_func_decl = &(current_storage.top()->methods[func->getName()]);
     }
 
-
     fileCtx->newFunction(func->getName());
 
     for (auto& it : func->args)

@@ -246,7 +246,7 @@ public:
 
         if ( it != str_to_type.end() ) return (*it).second;
 
-        throw std::runtime_error("Couldn't converse string '"+ type + "' to Type");
+        throw std::runtime_error("Unknown type: "+ type);
     }
 
     Type strToType(const std::string& s)
@@ -343,7 +343,6 @@ public:
         throw std::runtime_error("Unknown Function: " + name);
     }
 
-
     auto& getInlinedDeclarations()
     {
         return declared_inlined_functions;
@@ -355,6 +354,7 @@ public:
         declared_inlined_functions[name] = std::move(funcDecl);
         return true;
     }
+    
     bool hasInlined(const std::string& name) const
     {
         return declared_inlined_functions.contains(name);
@@ -379,7 +379,6 @@ public:
         registered_objectives[obj_lvalue] = obj_name;
         return true;
     }
-
 
     /// GOT NOT MANGLED NAME
     bool registerObjective(const std::string& name)
@@ -480,6 +479,8 @@ public:
         }   
 
         if ( t1.type == Type::struct_t && t2.type == Type::initializer_list ) return t1;
+
+        if ( t1.isList() && t2.type == Type::initializer_list ) return t1;
 
         if ( op == "=" && t1.type == Type::nbt && Type::isNbtLike(t2) && t1.list_depth <= t2.list_depth ) return t1;
 

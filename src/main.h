@@ -344,7 +344,7 @@ private:
 
         for ( auto& file : compiler->compiled_functions )
         {
-            fs::path file_path(settings.target +"/"+file.toPath());
+            fs::path file_path(settings.target + "/data" +"/"+file.toPath());
 
             auto it = compiled_objects.find(file_path);
 
