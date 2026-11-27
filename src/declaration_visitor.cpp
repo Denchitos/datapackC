@@ -212,6 +212,9 @@ void ForwardDefiner::visitMember(tree::OutScopeVar* var)
     auto& field = var->var_decl;
     auto& name = field->var_name;
     auto& type_name = field->type;
+
+    resolveName(fileCtx.get(),type_name,FileCompilationContext::hasType);
+
     auto type = fileCtx->strToType(type_name);
     type.list_depth = field->list_depth;
 
@@ -261,7 +264,6 @@ void ForwardDefiner::visit(tree::StorageDecl* storage_decl)
         fileCtx->registerStorage(storage_name,std::move(storage_decl));
     }
 }
-
 
 void RecursiveDefiner::visit(tree::Import* imp)
 {

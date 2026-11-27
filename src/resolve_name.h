@@ -7,10 +7,8 @@ inline void resolveName(FileCompilationContext* fileCtx,const Namespace& base,st
     if ( !var_type.contains(":") && !(fileCtx->*predicate)(var_type) )
     {
         auto nmsp = base;
-        std::cout<<"Got unresolved Name: "<<var_type<<"\n";
         while ( true )
         {
-            std::cout<<"Resolving Name: "<<nmsp.toMinecraftPath()<<var_type<<"\n";
             if ( nmsp.path.empty() || (fileCtx->*predicate)( nmsp.toMinecraftPath() + var_type ) ) break;
             nmsp.pop();
         }

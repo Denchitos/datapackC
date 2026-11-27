@@ -5,3 +5,4 @@ datapack/
 build/
 /build.bat
 Tasks/
+src/context.h

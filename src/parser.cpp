@@ -140,31 +140,48 @@ tree::NodePtr Parser::parseObjective()
 std::string Parser::parseName()
 {   
     std::string name;
-    if ( match(Token::Word) )
-    {
-        name = look(-1).tok;
-    }
-    if ( !match(Token::Colon) ) return name;
-
-    name.append(":");
-    
-    if ( !expect(Token::Word,"Afeter ':' in names must be a word") )
+    if ( !expect(Token::Word,"Expected name that must be start with word") )
     {
         statementPanic();
-        return name;
+        return "";
     }
 
-    name.append(look(-1).tok);
+    name = look(-1).tok;
 
-    while ( match(Token{"/",Token::Operator}) )
+    bool expects_colon = true;
+
+    while ( true )
     {
-        if ( !expect(Token::Word,"Afeter '/' in names must be a word") )
+        if ( expects_colon && match(Token::Colon) )
         {
-            statementPanic();
-            return name;
+            expects_colon = false;
+            name.append(":");
+            if (!expect(Token::Word,"Expected Word after ':' in name" ) )
+            {
+                statementPanic();
+                break;
+            }
+            name.append(look(-1).tok);
         }
-        name.append("/").append(look(-1).tok);
+        else if ( !expects_colon && match(Token::Colon) )
+        {
+            error("The second ':' in name. Any name can contains only one namespace dispatcher ':'");
+            statementPanic();
+            break;
+        }
+        else if ( match(Token{"/",Token::Operator}) )
+        {
+            if (!expect(Token::Word,"Expected Word after '/' in name" ) )
+            {
+                statementPanic();
+                break;
+            }
+            expects_colon = false;
+            name.append("/").append(look(-1).tok);
+        }
+        else break;
     }
+
     return name;
 }
 
