@@ -32,7 +32,6 @@ public:
     {
         std::cout<<s;
     }
-    Type typeInferrence(const Value& rhs);
     void visit(tree::Node*) override {}
     void visit(tree::Raw*) override;
     void visit(tree::Function*) override;

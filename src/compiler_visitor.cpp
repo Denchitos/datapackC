@@ -24,37 +24,6 @@ CompilerVisitor::CompilerVisitor(std::shared_ptr<FileCompilationContext> ctx,std
 
 }
 
-Type CompilerVisitor::typeInferrence(const Value& rhs)
-{
-    Type type{Type::auto_t}; 
-    if (rhs.type.type!=Type::numberLiteral && rhs.type.type!=Type::boolLiteral && rhs.type.type != Type::textLiteral && rhs.type.type != Type::rawSelector && type != Type::initializer_list )
-    {
-        type = rhs.type; 
-    }
-    else if ( rhs.type.type==Type::numberLiteral )
-    {
-        if ( rhs.value[0].find('.') != std::string::npos ) type.type = Type::float_t;
-        type.type = Type::score;
-    }
-    else if ( rhs.type.type==Type::boolLiteral )
-    {
-        type.type = Type::score_bool;
-    }
-    else if ( rhs.type.type==Type::rawSelector )
-    {
-        type.type = Type::selector;
-    }
-    else if ( rhs.type.type==Type::textLiteral )
-    {
-        type.type = Type::string;
-    }
-    else if ( rhs.type.type == Type::initializer_list )
-    {
-        throw std::runtime_error("Can not to infer type of initializer list");
-    } 
-    return type;
-}
-
 static std::string getRowCol( tree::Node* node ) 
 {
     return "[ " + std::to_string(node->getRow()) + " , " + std::to_string(node->getColumn()) + " ]";
@@ -133,10 +102,6 @@ void CompilerVisitor::visit(tree::VarDecl* vardecl)
 
         auto rhs = std::move(op_stack.top());
         op_stack.pop();
-
-        if ( type.type == Type::auto_t ){
-            type = typeInferrence(rhs);
-        }
 
         value = fileCtx->nameMangle(type,name);
         Value lhs{ value,type,name };

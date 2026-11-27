@@ -22,6 +22,7 @@ Type CallTreeBuilder::typeInferrence(const Type& rhs)
     if ( rhs == Type::numberLiteral ) return Type::score;
     else if ( rhs == Type::textLiteral ) return Type::string;
     else if ( rhs == Type::boolLiteral ) return Type::score_bool;
+    else if ( rhs == Type::rawSelector ) return Type::selector; 
     else if ( rhs == Type::initializer_list ) throw std::runtime_error("Unable inferrence type of initializer list");
     else return rhs;
 }
@@ -86,7 +87,9 @@ void CallTreeBuilder::visit(tree::VarDecl* varDecl)
     if ( varDecl->expr == nullptr ) throw std::runtime_error(varDecl->getRowCol()+" Expected an expression after varaible declaration in scope");
     
     try{
-        vars.top()[name] = typeInferrence(countType(varDecl->expr.get()));
+        auto t = typeInferrence(countType(varDecl->expr.get()));
+        vars.top()[name] = t;
+        varDecl->type = fileCtx->typeToStr( t );
         vars.top()[name].list_depth = varDecl->list_depth;
     }
     catch(std::exception& e){
