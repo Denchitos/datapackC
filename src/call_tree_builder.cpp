@@ -252,7 +252,7 @@ void CallTreeBuilder::visit(tree::Call* call)
 
 void CallTreeBuilder::visit(tree::Function* func)
 {
-    auto fd = fileCtx->getFuncDecl(func->getName());
+    auto fd = fileCtx->getFuncDecl(fileCtx->currentNamespace.toMinecraftPath()+func->getName());
 
     current_function_name = fd.minecraft_name;
 
@@ -270,7 +270,7 @@ void CallTreeBuilder::visit(tree::Function* func)
 
 void CallTreeBuilder::visit(tree::InlinedFunction* func)
 {
-    auto fd = fileCtx->getInlinedDecl(func->getName());
+    auto fd = fileCtx->getInlinedDecl(fileCtx->currentNamespace.toMinecraftPath()+func->getName());
 
     current_function_name = fd.minecraft_name;
 

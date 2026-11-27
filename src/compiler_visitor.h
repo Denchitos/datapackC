@@ -19,15 +19,16 @@ class CompilerVisitor : public Visitor
     std::stack<StorageDefinition*> current_storage;
 
     bool is_in_inlined_function = false;
+
+    FunctionDeclaration* last_func_decl = nullptr;
 public:
-    std::string generateDefaultNbt(const Type& type);
-    void ensureVarInitialized(const Value& lhs);
     std::vector<Function> compiled_functions;
+
     CompilerVisitor(std::shared_ptr<FileCompilationContext>,std::shared_ptr<ExprCodeGen>);
 
     std::pair<Value,Value> getTwoOperands();
     Value getTopOperand();
-
+    
     inline void error(const std::string& s)
     {
         std::cout<<s;

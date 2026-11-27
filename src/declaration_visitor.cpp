@@ -1,13 +1,10 @@
 #include"declaration_visitor.h"
-
 #include"tree/function.h"
 #include"tree/namespace.h"
 #include"tree/storage.h"
 #include"tree/objective.h"
 #include"tree/import.h"
-
 #include "file_ast.h"
-
 
 void ForwardStorageDeclaration::visit(tree::StorageDecl* storage_decl)
 {
@@ -25,7 +22,6 @@ void ForwardStorageDeclaration::visit(tree::StorageDecl* storage_decl)
     }
 
     fileCtx->currentNamespace.pop();
-
 }
 
 void ForwardStorageDeclaration::visit(tree::Objective* obj)
@@ -152,11 +148,11 @@ void ForwardDefiner::visitStatic(tree::Function* func)
 
         if ( func_decl.ret.has_value() && !func->alwaysReturn )
         {
-            throw std::runtime_error("Function '"+func->getName()+"' don't return always");
+            throw std::runtime_error("Function '"+fileCtx->currentNamespace.toMinecraftPath()+func->getName()+"' don't return always");
         }
 
-        if (!fileCtx->registerFunc(func->getName(),std::move(func_decl) ))
-            throw std::runtime_error("Redifinition of callable name '"+func->getName()+"'");
+        if (!fileCtx->registerFunc(fileCtx->currentNamespace.toMinecraftPath()+func->getName(),std::move(func_decl) ))
+            throw std::runtime_error("Redifinition of callable name '"+fileCtx->currentNamespace.toMinecraftPath()+func->getName()+"'");
     }
     catch(std::exception& e)
     {
@@ -184,8 +180,8 @@ void ForwardDefiner::visit(tree::InlinedFunction* func)
 void ForwardDefiner::visitStatic(tree::InlinedFunction* func)
 {
     auto&& val = makeInlinedFuncDecl(func);
-        if ( !fileCtx->registerInlined(func->getName(),std::move(val) ) )
-            throw std::runtime_error(func->getRowCol()+" Redifinition of callable name '"+func->getName()+"'");
+        if ( !fileCtx->registerInlined(fileCtx->currentNamespace.toMinecraftPath()+func->getName(),std::move(val) ) )
+            throw std::runtime_error(func->getRowCol()+" Redifinition of callable name '"+fileCtx->currentNamespace.toMinecraftPath()+func->getName()+"'");
 }
 
 void ForwardDefiner::visitMember(tree::InlinedFunction* func)
@@ -262,6 +258,7 @@ void ForwardDefiner::visit(tree::StorageDecl* storage_decl)
         fileCtx->registerStorage(storage_name,std::move(storage_decl));
     }
 }
+
 
 void RecursiveDefiner::visit(tree::Import* imp)
 {

@@ -413,7 +413,7 @@ public:
 
     bool recursionChecking()
     {
-        std::cout<<Info("[Checking for recursion]\n");
+        std::cout<<Info("[Building call tree]\n");
         auto result = true;
         CallTreeBuilder recChecker(nullptr);
         for ( auto& [path,file] : *modules )

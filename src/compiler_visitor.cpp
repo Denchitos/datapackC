@@ -51,6 +51,17 @@ Value CompilerVisitor::getTopOperand()
 
 void CompilerVisitor::visit(tree::Function* func)
 {
+    if ( func->is_static )
+    {
+        last_func_decl = &fileCtx->getFuncDecl(fileCtx->currentNamespace.toMinecraftPath()+func->getName());
+    }
+    else
+    {
+        // Если бы метода не было то этот этап и не начался. Ошибка была бы отловлена ранее
+        last_func_decl = &(current_storage.top()->methods[func->getName()]);
+    }
+
+
     fileCtx->newFunction(func->getName());
 
     for (auto& it : func->args)
@@ -725,12 +736,13 @@ void CompilerVisitor::visit(tree::Call* call)
     }
     catch ( std::exception& e )
     {
-        throw std::runtime_error(getRowCol(call) + " " + e.what());
+        throw std::runtime_error(call->getRowCol() + " " + e.what());
     }
 }
 
 void CompilerVisitor::visit(tree::Return* ret)
 {
+    try {
     if ( is_in_inlined_function )
     {
         throw std::runtime_error(getRowCol(ret) + " In Inlined Function can't be a return statement");
@@ -738,9 +750,7 @@ void CompilerVisitor::visit(tree::Return* ret)
 
     auto name = fileCtx->realFunction().getName();
 
-    FunctionDeclaration funcDecl;
-    if ( current_storage.empty() ) funcDecl = fileCtx->getFuncDecl(name);
-    else funcDecl = current_storage.top()->methods[fileCtx->realFunction().getName()];
+    FunctionDeclaration& funcDecl = *last_func_decl;
 
     if ( funcDecl.ret.has_value() )
     {
@@ -762,4 +772,9 @@ void CompilerVisitor::visit(tree::Return* ret)
         codeGen->genAssign(v,{"1",Type::numberLiteral});
     }
     fileCtx->println("return 0");
+    }
+    catch ( std::exception&e)
+    {
+        throw std::runtime_error(ret->getRowCol() + " " + e.what());
+    }
 }
